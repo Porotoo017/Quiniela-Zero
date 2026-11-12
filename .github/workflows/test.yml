@@ -1,0 +1,9 @@
+name: Quiniela Collector
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hola mundo"
