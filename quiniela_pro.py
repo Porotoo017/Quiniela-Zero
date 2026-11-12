@@ -4,6 +4,7 @@ import time
 import logging
 import sys
 import os
+import re
 from bs4 import BeautifulSoup
 from collections import defaultdict, Counter
 
@@ -47,16 +48,27 @@ def scrape(loteria_cfg):
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
         
+        # 1. Intentamos con el selector de la config
         items = [s.get_text(strip=True) for s in soup.select(loteria_cfg["selector"])]
         numeros = [n for n in items if n.isdigit() and len(n) == 4]
         
-        # --- BLOQUE DE DIAGNÓSTICO (DEBUG) ---
+        # 2. BLOQUE DE DIAGNÓSTICO AVANZADO (si el selector falla)
         if len(numeros) < 20:
-            print(f"\n--- ATENCION: Solo se encontraron {len(numeros)} numeros en {loteria_cfg['nombre']} ---")
-            print(f"--- HTML DE LA PAGINA (primeros 1500 caracteres) ---")
-            print(soup.prettify()[:1500])
-            print("--------------------------------------------------\n")
-        # -------------------------------------
+            print(f"\n--- ATENCION: Selector '{loteria_cfg['selector']}' falló en {loteria_cfg['nombre']} ---")
+            print(f"--- BUSCANDO CUALQUIER TEXTO DE 4 DÍGITOS EN LA PAGINA ---")
+            
+            # Buscamos todos los textos que sean exactamente 4 números
+            nodos_4_digitos = soup.find_all(string=re.compile(r'^\s*\d{4}\s*$'))
+            
+            if not nodos_4_digitos:
+                print("¡No se encontró NINGÚN número de 4 dígitos en el HTML! (Puede que carguen por JavaScript).")
+            else:
+                print(f"Se encontraron {len(nodos_4_digitos)} textos de 4 dígitos. Aquí están los primeros 10 y sus etiquetas HTML:")
+                for nodo in nodos_4_digitos[:10]:
+                    padre = nodo.parent
+                    clases = padre.get('class', [])
+                    print(f" -> Numero: {nodo.strip()} | Etiqueta: <{padre.name}> | Clases: {clases} | ID: {padre.get('id')}")
+            print("------------------------------------------------------------\n")
 
         return ",".join(numeros[-20:]) if len(numeros) >= 20 else None
     except Exception as e:
