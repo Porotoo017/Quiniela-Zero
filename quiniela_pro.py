@@ -10,19 +10,11 @@ from collections import defaultdict, Counter
 # --- CONFIGURACIÓN ---
 DB_NAME = "quiniela_pro.db"
 LOG_FILE = "quiniela_ops.log"
-INTERVALO = 3600  # solo aplica en modo local
+INTERVALO = 3600
 
 LOTERIAS = [
-    {
-        "nombre": "CIUDAD",
-        "url": "https://www.loteriadelaciudad.gob.ar/resultados.html",
-        "selector": ".premio",
-    },
-    {
-        "nombre": "PROVINCIA",
-        "url": "https://www.loteria.gba.gov.ar/index.php/resultados",
-        "selector": ".premio",
-    },
+    {"nombre": "CIUDAD", "url": "https://www.loteriadelaciudad.gob.ar/resultados.html", "selector": ".premio"},
+    {"nombre": "PROVINCIA", "url": "https://www.loteria.gba.gov.ar/index.php/resultados", "selector": ".premio"}
 ]
 
 # --- LOGGING ---
@@ -36,7 +28,6 @@ except Exception as e:
     print(f"Error crítico iniciando logs: {e}")
     sys.exit(1)
 
-
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
         conn.execute("""
@@ -49,31 +40,36 @@ def init_db():
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_loteria ON sorteos(loteria)")
 
-
 def scrape(loteria_cfg):
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Quiniela-Bot/2.0)"}
         r = requests.get(loteria_cfg["url"], headers=headers, timeout=15)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
+        
         items = [s.get_text(strip=True) for s in soup.select(loteria_cfg["selector"])]
         numeros = [n for n in items if n.isdigit() and len(n) == 4]
+        
+        # --- BLOQUE DE DIAGNÓSTICO (DEBUG) ---
+        if len(numeros) < 20:
+            print(f"\n--- ATENCION: Solo se encontraron {len(numeros)} numeros en {loteria_cfg['nombre']} ---")
+            print(f"--- HTML DE LA PAGINA (primeros 1500 caracteres) ---")
+            print(soup.prettify()[:1500])
+            print("--------------------------------------------------\n")
+        # -------------------------------------
+
         return ",".join(numeros[-20:]) if len(numeros) >= 20 else None
     except Exception as e:
         logging.error(f"Fallo en scraping {loteria_cfg['nombre']}: {e}")
         return None
 
-
 def run_analytics(loteria_nombre):
     with sqlite3.connect(DB_NAME) as conn:
-        filas = conn.execute(
-            "SELECT datos FROM sorteos WHERE loteria=? ORDER BY id",
-            (loteria_nombre,),
-        ).fetchall()
-
+        filas = conn.execute("SELECT datos FROM sorteos WHERE loteria=? ORDER BY id", (loteria_nombre,)).fetchall()
+    
     if not filas:
         return [], None
-
+    
     transiciones = defaultdict(list)
     for (datos,) in filas:
         nums = [n[-2:] for n in datos.split(",") if n]
@@ -89,9 +85,7 @@ def run_analytics(loteria_nombre):
     top = [(num, freq / total) for num, freq in Counter(siguientes).most_common(3)]
     return top, ultimo
 
-
 def ejecutar_ciclo():
-    """Un ciclo completo. Devuelve True si hubo al menos un INSERT nuevo."""
     cambios = False
     for loteria in LOTERIAS:
         data = scrape(loteria)
@@ -120,7 +114,6 @@ def ejecutar_ciclo():
         )
     return cambios
 
-
 def main():
     init_db()
     logging.info("=== MOTOR QUINIELA-ZERO INICIADO ===")
@@ -132,7 +125,6 @@ def main():
         print(f"CAMBIOS={1 if cambios else 0}")
         return
 
-    # Modo local (Termux / consola)
     try:
         while True:
             ejecutar_ciclo()
@@ -140,7 +132,6 @@ def main():
             time.sleep(INTERVALO)
     except KeyboardInterrupt:
         logging.info("Sistema detenido por el usuario.")
-
 
 if __name__ == "__main__":
     main()
