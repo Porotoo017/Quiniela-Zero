@@ -1,4 +1,4 @@
-name: Quiniela Collector
+name: Bot Quiniela
 
 on:
   push:
