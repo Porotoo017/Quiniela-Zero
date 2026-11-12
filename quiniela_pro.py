@@ -48,15 +48,13 @@ def scrape(loteria_cfg):
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
         
-        # NUEVA LÓGICA: Buscar cualquier texto que sea exactamente 4 dígitos
         nodos_4_digitos = soup.find_all(string=re.compile(r'^\s*\d{4}\s*$'))
         numeros = [nodo.strip() for nodo in nodos_4_digitos]
 
         if not numeros:
-            logging.warning(f"Fallo en scraping {loteria_cfg['nombre']}: No se encontraron números (posible JS).")
+            logging.warning(f"Fallo en scraping {loteria_cfg['nombre']}: No se encontraron números.")
             return None
 
-        # Tomamos los últimos 20 números encontrados
         return ",".join(numeros[-20:])
     except Exception as e:
         logging.error(f"Fallo en scraping {loteria_cfg['nombre']}: {e}")
@@ -86,9 +84,12 @@ def run_analytics(loteria_nombre):
 
 def ejecutar_ciclo():
     cambios = False
+    reporte = "=== REPORTE DE QUINIELA-ZERO ===\n\n"
+    
     for loteria in LOTERIAS:
         data = scrape(loteria)
         if not data:
+            reporte += f"Lotería: {loteria['nombre']}\nNo se pudieron obtener datos en este intento.\n\n"
             continue
 
         with sqlite3.connect(DB_NAME) as conn:
@@ -98,7 +99,15 @@ def ejecutar_ciclo():
             ).fetchone()
             if prev and prev[0] == data:
                 logging.info(f"{loteria['nombre']}: Sin cambios.")
+                # Aunque no haya cambios, lo agregamos al reporte
+                top, ultimo = run_analytics(loteria["nombre"])
+                candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
+                reporte += f"Lotería: {loteria['nombre']}\n"
+                reporte += f"Último número: {ultimo} (Sin cambios nuevos)\n"
+                reporte += f"Candidatos: {', '.join(candidatos)}\n"
+                reporte += "-" * 30 + "\n\n"
                 continue
+                
             conn.execute(
                 "INSERT INTO sorteos (loteria, datos) VALUES (?,?)",
                 (loteria["nombre"], data),
@@ -107,10 +116,19 @@ def ejecutar_ciclo():
 
         top, ultimo = run_analytics(loteria["nombre"])
         candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-        logging.info(
-            f"{loteria['nombre']}: Nuevo registro. "
-            f"Último: {ultimo}. Candidatos: {candidatos}"
-        )
+        
+        # Armamos el texto del reporte
+        reporte += f"Lotería: {loteria['nombre']}\n"
+        reporte += f"Último número: {ultimo}\n"
+        reporte += f"Candidatos (Frecuencia histórica): {', '.join(candidatos)}\n"
+        reporte += "-" * 30 + "\n\n"
+
+        logging.info(f"{loteria['nombre']}: Nuevo registro. Último: {ultimo}. Candidatos: {candidatos}")
+    
+    # Guardamos el reporte en un archivo de texto
+    with open("resultados.txt", "w", encoding="utf-8") as f:
+        f.write(reporte)
+        
     return cambios
 
 def main():
