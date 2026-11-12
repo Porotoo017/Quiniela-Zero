@@ -1,19 +1,32 @@
 name: Bot Quiniela
+
 on:
   push:
+  schedule:
+    - cron: "0 * * * *"
   workflow_dispatch:
+
+permissions:
+  contents: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+
       - name: Instalar dependencias
         run: pip install -r requirements.txt
+
       - name: Correr scraper
         id: run
         run: |
@@ -23,11 +36,11 @@ jobs:
           else
             echo "cambios=0" >> $GITHUB_OUTPUT
           fi
-      - name: Commit del DB si hubo cambios
-        if: steps.run.outputs.cambios == '1'
+
+      - name: Commit del DB y Reporte
         run: |
           git config user.name "quiniela-bot"
           git config user.email "bot@users.noreply.github.com"
           git add quiniela_pro.db resultados.txt
-          git commit -m "data: actualización $(date -u +%Y-%m-%dT%H:%M)"
+          git commit -m "data: actualización $(date -u +%Y-%m-%dT%H:%M)" || exit 0
           git push
