@@ -45,3 +45,4 @@ jobs:
           git add quiniela_pro.db
           git commit -m "data: actualización $(date -u +%Y-%m-%dT%H:%M)"
           git push
+          # prueba 1
