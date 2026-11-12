@@ -14,8 +14,8 @@ LOG_FILE = "quiniela_ops.log"
 INTERVALO = 3600
 
 LOTERIAS = [
-    {"nombre": "CIUDAD", "url": "https://www.loteriadelaciudad.gob.ar/resultados.html", "selector": ".premio"},
-    {"nombre": "PROVINCIA", "url": "https://www.loteria.gba.gov.ar/index.php/resultados", "selector": ".premio"}
+    # {"nombre": "CIUDAD", "url": "https://www.loteriadelaciudad.gob.ar/resultados.html", "selector": ".premio"},
+    {"nombre": "PROVINCIA", "url": "https://www.loteria.gba.gov.ar/index.php/resultados", "selector": "N/A"}
 ]
 
 # --- LOGGING ---
@@ -48,29 +48,16 @@ def scrape(loteria_cfg):
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
         
-        # 1. Intentamos con el selector de la config
-        items = [s.get_text(strip=True) for s in soup.select(loteria_cfg["selector"])]
-        numeros = [n for n in items if n.isdigit() and len(n) == 4]
-        
-        # 2. BLOQUE DE DIAGNÓSTICO AVANZADO (si el selector falla)
-        if len(numeros) < 20:
-            print(f"\n--- ATENCION: Selector '{loteria_cfg['selector']}' falló en {loteria_cfg['nombre']} ---")
-            print(f"--- BUSCANDO CUALQUIER TEXTO DE 4 DÍGITOS EN LA PAGINA ---")
-            
-            # Buscamos todos los textos que sean exactamente 4 números
-            nodos_4_digitos = soup.find_all(string=re.compile(r'^\s*\d{4}\s*$'))
-            
-            if not nodos_4_digitos:
-                print("¡No se encontró NINGÚN número de 4 dígitos en el HTML! (Puede que carguen por JavaScript).")
-            else:
-                print(f"Se encontraron {len(nodos_4_digitos)} textos de 4 dígitos. Aquí están los primeros 10 y sus etiquetas HTML:")
-                for nodo in nodos_4_digitos[:10]:
-                    padre = nodo.parent
-                    clases = padre.get('class', [])
-                    print(f" -> Numero: {nodo.strip()} | Etiqueta: <{padre.name}> | Clases: {clases} | ID: {padre.get('id')}")
-            print("------------------------------------------------------------\n")
+        # NUEVA LÓGICA: Buscar cualquier texto que sea exactamente 4 dígitos
+        nodos_4_digitos = soup.find_all(string=re.compile(r'^\s*\d{4}\s*$'))
+        numeros = [nodo.strip() for nodo in nodos_4_digitos]
 
-        return ",".join(numeros[-20:]) if len(numeros) >= 20 else None
+        if not numeros:
+            logging.warning(f"Fallo en scraping {loteria_cfg['nombre']}: No se encontraron números (posible JS).")
+            return None
+
+        # Tomamos los últimos 20 números encontrados
+        return ",".join(numeros[-20:])
     except Exception as e:
         logging.error(f"Fallo en scraping {loteria_cfg['nombre']}: {e}")
         return None
