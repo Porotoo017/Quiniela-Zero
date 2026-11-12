@@ -2,11 +2,11 @@ name: Quiniela Collector
 
 on:
   schedule:
-    - cron: "0 * * * *"   # cada hora en punto, UTC
-  workflow_dispatch:      # botón manual desde la pestaña Actions
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 permissions:
-  contents: write         # necesario para pushear el .db
+  contents: write
 
 jobs:
   scrape:
@@ -44,4 +44,3 @@ jobs:
           git add quiniela_pro.db
           git commit -m "data: actualización $(date -u +%Y-%m-%dT%H:%M)"
           git push
-          
