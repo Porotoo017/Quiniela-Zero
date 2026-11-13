@@ -5,6 +5,7 @@ import logging
 import sys
 import os
 import re
+import csv
 from bs4 import BeautifulSoup
 from collections import defaultdict, Counter
 
@@ -12,6 +13,7 @@ from collections import defaultdict, Counter
 DB_NAME = "quiniela_pro.db"
 LOG_FILE = "quiniela_ops.log"
 INTERVALO = 3600
+CSV_HISTORIAL = "provincia_completo.csv"
 
 LOTERIAS = [
     {"nombre": "PROVINCIA", "url": "https://www.loteria.gba.gov.ar/index.php/resultados", "selector": "N/A"}
@@ -39,6 +41,38 @@ def init_db():
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_loteria ON sorteos(loteria)")
+
+def importar_historial():
+    """Lee el CSV de 2 años y lo carga en la base de datos si está vacía."""
+    with sqlite3.connect(DB_NAME) as conn:
+        count = conn.execute("SELECT COUNT(*) FROM sorteos").fetchone()[0]
+        if count > 0:
+            return # Ya hay datos, no importamos de nuevo.
+
+        if not os.path.exists(CSV_HISTORIAL):
+            logging.warning(f"No se encontró {CSV_HISTORIAL} para importar.")
+            return
+
+        logging.info(f"Base de datos vacía. Importando historial desde {CSV_HISTORIAL}...")
+        insertados = 0
+        
+        try:
+            with open(CSV_HISTORIAL, "r", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                next(reader, None) # Saltar la cabecera
+                
+                for row in reader:
+                    if len(row) >= 23:
+                        numeros = row[3:23] 
+                        numeros_limpios = [n.strip() for n in numeros if n.strip().isdigit()]
+                        
+                        if len(numeros_limpios) == 20:
+                            datos = ",".join(numeros_limpios)
+                            conn.execute("INSERT INTO sorteos (loteria, datos) VALUES (?, ?)", ("PROVINCIA", datos))
+                            insertados += 1
+            logging.info(f"¡ÉXITO! Se importaron {insertados} sorteos históricos.")
+        except Exception as e:
+            logging.error(f"Error importando el CSV: {e}")
 
 def scrape(loteria_cfg):
     try:
@@ -88,8 +122,7 @@ def ejecutar_ciclo():
     for loteria in LOTERIAS:
         data = scrape(loteria)
         if not data:
-            # Si falla o está vacía, NO sobreescribimos el reporte anterior
-            logging.warning(f"{loteria['nombre']}: No se encontraron números.")
+            logging.warning(f"{loteria['nombre']}: No se encontraron números en la web.")
             continue
 
         hubo_datos = True
@@ -101,7 +134,7 @@ def ejecutar_ciclo():
             ).fetchone()
             
             if prev and prev[0] == data:
-                logging.info(f"{loteria['nombre']}: Sin cambios.")
+                logging.info(f"{loteria['nombre']}: Sin cambios en la web.")
                 top, ultimo = run_analytics(loteria["nombre"])
                 candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
                 reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo} (Sin cambios nuevos)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
@@ -118,7 +151,6 @@ def ejecutar_ciclo():
         reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo}\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
         logging.info(f"{loteria['nombre']}: Nuevo registro. Último: {ultimo}. Candidatos: {candidatos}")
     
-    # Solo escribimos el archivo si realmente hubo datos válidos
     if hubo_datos:
         with open("resultados.txt", "w", encoding="utf-8") as f:
             f.write(reporte)
@@ -127,6 +159,7 @@ def ejecutar_ciclo():
 
 def main():
     init_db()
+    importar_historial() # <--- Acá se ejecuta la magia de los 2 años
     logging.info("=== MOTOR QUINIELA-ZERO INICIADO ===")
 
     modo_ci = os.getenv("GITHUB_ACTIONS") == "true"
