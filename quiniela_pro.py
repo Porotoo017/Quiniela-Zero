@@ -15,6 +15,10 @@ LOG_FILE = "quiniela_ops.log"
 INTERVALO = 3600
 CSV_HISTORIAL = "provincia_completo.csv"
 
+# --- TELEGRAM CONFIG ---
+TG_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TG_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
 LOTERIAS = [
     {"nombre": "PROVINCIA", "url": "https://www.loteria.gba.gov.ar/index.php/resultados", "selector": "N/A"}
 ]
@@ -30,6 +34,18 @@ except Exception as e:
     print(f"Error crítico iniciando logs: {e}")
     sys.exit(1)
 
+def enviar_telegram(mensaje):
+    if not TG_TOKEN or not TG_CHAT_ID:
+        logging.warning("Faltan credenciales de Telegram. Omitiendo envío.")
+        return
+    try:
+        url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
+        payload = {"chat_id": TG_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
+        requests.post(url, json=payload, timeout=10)
+        logging.info("Mensaje enviado a Telegram.")
+    except Exception as e:
+        logging.error(f"Error enviando a Telegram: {e}")
+
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
         conn.execute("""
@@ -43,36 +59,40 @@ def init_db():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_loteria ON sorteos(loteria)")
 
 def importar_historial():
-    """Lee el CSV de 2 años y lo carga en la base de datos si está vacía."""
+    archivos = {
+        "PROVINCIA": "provincia_completo.csv"
+    }
+
     with sqlite3.connect(DB_NAME) as conn:
-        count = conn.execute("SELECT COUNT(*) FROM sorteos").fetchone()[0]
-        if count > 0:
-            return # Ya hay datos, no importamos de nuevo.
+        for loteria, archivo in archivos.items():
+            count = conn.execute("SELECT COUNT(*) FROM sorteos WHERE loteria=?", (loteria,)).fetchone()[0]
+            if count > 0:
+                continue
 
-        if not os.path.exists(CSV_HISTORIAL):
-            logging.warning(f"No se encontró {CSV_HISTORIAL} para importar.")
-            return
+            if not os.path.exists(archivo):
+                logging.warning(f"No se encontró {archivo} para importar.")
+                continue
 
-        logging.info(f"Base de datos vacía. Importando historial desde {CSV_HISTORIAL}...")
-        insertados = 0
-        
-        try:
-            with open(CSV_HISTORIAL, "r", encoding="utf-8") as f:
-                reader = csv.reader(f)
-                next(reader, None) # Saltar la cabecera
-                
-                for row in reader:
-                    if len(row) >= 23:
-                        numeros = row[3:23] 
-                        numeros_limpios = [n.strip() for n in numeros if n.strip().isdigit()]
-                        
-                        if len(numeros_limpios) == 20:
-                            datos = ",".join(numeros_limpios)
-                            conn.execute("INSERT INTO sorteos (loteria, datos) VALUES (?, ?)", ("PROVINCIA", datos))
-                            insertados += 1
-            logging.info(f"¡ÉXITO! Se importaron {insertados} sorteos históricos.")
-        except Exception as e:
-            logging.error(f"Error importando el CSV: {e}")
+            logging.info(f"Base de datos vacía para {loteria}. Importando historial desde {archivo}...")
+            insertados = 0
+            
+            try:
+                with open(archivo, "r", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    next(reader, None)
+                    
+                    for row in reader:
+                        if len(row) >= 23:
+                            numeros = row[3:23] 
+                            numeros_limpios = [n.strip() for n in numeros if n.strip().isdigit()]
+                            
+                            if len(numeros_limpios) == 20:
+                                datos = ",".join(numeros_limpios)
+                                conn.execute("INSERT INTO sorteos (loteria, datos) VALUES (?, ?)", (loteria, datos))
+                                insertados += 1
+                logging.info(f"¡ÉXITO! Se importaron {insertados} sorteos históricos de {loteria}.")
+            except Exception as e:
+                logging.error(f"Error importando {archivo}: {e}")
 
 def scrape(loteria_cfg):
     try:
@@ -122,20 +142,17 @@ def ejecutar_ciclo():
     for loteria in LOTERIAS:
         data = scrape(loteria)
         
-        # CASO 1: La página está vacía, falló o está en mantenimiento
         if not data:
-            logging.warning(f"{loteria['nombre']}: No se encontraron números en la web (posible mantenimiento).")
-            # Usamos el historial guardado para armar el reporte
+            logging.warning(f"{loteria['nombre']}: No se encontraron números en la web.")
             top, ultimo = run_analytics(loteria["nombre"])
             if ultimo:
                 hubo_datos = True
                 candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-                reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo} (Historial)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
+                reporte += f"*Lotería: {loteria['nombre']}*\nÚltimo número: {ultimo} (Historial)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
             continue
 
         hubo_datos = True
 
-        # CASO 2: Hay datos nuevos en la web
         with sqlite3.connect(DB_NAME) as conn:
             prev = conn.execute(
                 "SELECT datos FROM sorteos WHERE loteria=? ORDER BY id DESC LIMIT 1",
@@ -146,7 +163,7 @@ def ejecutar_ciclo():
                 logging.info(f"{loteria['nombre']}: Sin cambios en la web.")
                 top, ultimo = run_analytics(loteria["nombre"])
                 candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-                reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo} (Sin cambios nuevos)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
+                reporte += f"*Lotería: {loteria['nombre']}*\nÚltimo número: {ultimo} (Sin cambios)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
                 continue
                 
             conn.execute(
@@ -157,18 +174,22 @@ def ejecutar_ciclo():
 
         top, ultimo = run_analytics(loteria["nombre"])
         candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-        reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo}\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
+        reporte += f"*Lotería: {loteria['nombre']}*\nÚltimo número: {ultimo}\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
         logging.info(f"{loteria['nombre']}: Nuevo registro. Último: {ultimo}. Candidatos: {candidatos}")
     
     if hubo_datos:
         with open("resultados.txt", "w", encoding="utf-8") as f:
             f.write(reporte)
         
+        # Si hubo datos y el bot encontró un número NUEVO, enviamos a Telegram
+        if cambios:
+            enviar_telegram(reporte)
+        
     return cambios
 
 def main():
     init_db()
-    importar_historial() # Magia: Carga los 2 años si la DB está vacía
+    importar_historial()
     logging.info("=== MOTOR QUINIELA-ZERO INICIADO ===")
 
     modo_ci = os.getenv("GITHUB_ACTIONS") == "true"
