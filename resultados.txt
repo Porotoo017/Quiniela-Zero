@@ -1,5 +1,7 @@
 === REPORTE DE QUINIELA-ZERO ===
 
 Lotería: PROVINCIA
-No se pudieron obtener datos en este intento.
+Último número: 03 (Historial)
+Candidatos: 13 (2.2%), 21 (1.8%), 24 (1.8%)
+----------------
 
