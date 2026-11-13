@@ -40,10 +40,9 @@ def enviar_telegram(mensaje):
         return
     try:
         url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-        # SACAMOS EL MARKDOWN PARA EVITAR ERRORES DE FORMATO
         payload = {"chat_id": TG_CHAT_ID, "text": mensaje}
         respuesta = requests.post(url, json=payload, timeout=10)
-        logging.info(f"Respuesta de Telegram: {respuesta.status_code} - {respuesta.text}")
+        logging.info(f"Respuesta de Telegram: {respuesta.status_code}")
     except Exception as e:
         logging.error(f"Error enviando a Telegram: {e}")
 
@@ -143,6 +142,7 @@ def ejecutar_ciclo():
     for loteria in LOTERIAS:
         data = scrape(loteria)
         
+        # Si la página está vacía, usamos el historial
         if not data:
             logging.warning(f"{loteria['nombre']}: No se encontraron números en la web.")
             top, ultimo = run_analytics(loteria["nombre"])
@@ -154,6 +154,7 @@ def ejecutar_ciclo():
 
         hubo_datos = True
 
+        # Si hay datos, comparamos con la base
         with sqlite3.connect(DB_NAME) as conn:
             prev = conn.execute(
                 "SELECT datos FROM sorteos WHERE loteria=? ORDER BY id DESC LIMIT 1",
@@ -182,7 +183,8 @@ def ejecutar_ciclo():
         with open("resultados.txt", "w", encoding="utf-8") as f:
             f.write(reporte)
         
-        if True: # PRUEBA FORZADA
+        # EL CANDADO FINAL: Solo envía a Telegram si hubo un número NUEVO
+        if cambios:
             enviar_telegram(reporte)
         
     return cambios
