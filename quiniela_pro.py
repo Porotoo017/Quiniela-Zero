@@ -181,7 +181,7 @@ def ejecutar_ciclo():
         with open("resultados.txt", "w", encoding="utf-8") as f:
             f.write(reporte)
         
-        # Si hubo datos y el bot encontró un número NUEVO, enviamos a Telegram
+        # ⚠️ PRUEBA FORZADA: Cambiamos "if cambios:" por "if True:"
         if True:
             enviar_telegram(reporte)
         
