@@ -1,7 +1,17 @@
-=== REPORTE DE QUINIELA-ZERO ===
+🏆 <b>REPORTE TERMINATOR V4 (INDUSTRIAL)</b> 🏆
 
-Lotería: PROVINCIA
-Último número: 57
-Candidatos: 34 (1.9%), 87 (1.9%), 61 (1.7%)
-----------------
+🎲 Turno: <b>VESPERTINA</b>
+🔢 Último: <code>68</code>
+🎯 Candidatos: <b>02</b> (4.1%), <b>86</b> (3.0%), <b>94</b> (3.0%)
+➖➖➖➖➖➖➖➖➖➖
+
+🎲 Turno: <b>NOCTURNA</b>
+🔢 Último: <code>03</code>
+🎯 Candidatos: <b>15</b> (50.0%), <b>76</b> (50.0%)
+➖➖➖➖➖➖➖➖➖➖
+
+🎲 Turno: <b>MATUTINA</b>
+🔢 Último: <code>39</code>
+🎯 Candidatos: <b>03</b> (4.8%), <b>65</b> (2.9%), <b>66</b> (2.9%)
+➖➖➖➖➖➖➖➖➖➖
 
