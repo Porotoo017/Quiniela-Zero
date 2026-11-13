@@ -6,8 +6,8 @@
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>VESPERTINA</b>
-🔢 Último: <code>68</code>
-🎯 Candidatos: <b>02</b> (4.1%), <b>86</b> (3.0%), <b>94</b> (3.0%)
+🔢 Último: <code>16</code>
+🎯 Candidatos: <b>11</b> (3.8%), <b>23</b> (3.1%), <b>77</b> (2.8%)
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>NOCTURNA</b>
