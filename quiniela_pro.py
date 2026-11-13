@@ -121,12 +121,21 @@ def ejecutar_ciclo():
     
     for loteria in LOTERIAS:
         data = scrape(loteria)
+        
+        # CASO 1: La página está vacía, falló o está en mantenimiento
         if not data:
-            logging.warning(f"{loteria['nombre']}: No se encontraron números en la web.")
+            logging.warning(f"{loteria['nombre']}: No se encontraron números en la web (posible mantenimiento).")
+            # Usamos el historial guardado para armar el reporte
+            top, ultimo = run_analytics(loteria["nombre"])
+            if ultimo:
+                hubo_datos = True
+                candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
+                reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo} (Historial)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
             continue
 
         hubo_datos = True
 
+        # CASO 2: Hay datos nuevos en la web
         with sqlite3.connect(DB_NAME) as conn:
             prev = conn.execute(
                 "SELECT datos FROM sorteos WHERE loteria=? ORDER BY id DESC LIMIT 1",
@@ -159,7 +168,7 @@ def ejecutar_ciclo():
 
 def main():
     init_db()
-    importar_historial() # <--- Acá se ejecuta la magia de los 2 años
+    importar_historial() # Magia: Carga los 2 años si la DB está vacía
     logging.info("=== MOTOR QUINIELA-ZERO INICIADO ===")
 
     modo_ci = os.getenv("GITHUB_ACTIONS") == "true"
