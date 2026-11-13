@@ -3,7 +3,17 @@ name: Bot Quiniela
 on:
   push:
   schedule:
-    - cron: "0 * * * *"
+    # Horarios en UTC (Hora Argentina + 3 horas)
+    # Atrapa La Previa a las 11:00 ARG (14:00 UTC)
+    - cron: "0 14 * * *"
+    # Atrapa El Primero a las 12:45 ARG (15:45 UTC)
+    - cron: "45 15 * * *"
+    # Atrapa Matutino a las 15:45 ARG (18:45 UTC)
+    - cron: "45 18 * * *"
+    # Atrapa Vespertino a las 18:45 ARG (21:45 UTC)
+    - cron: "45 21 * * *"
+    # Atrapa Nocturno a las 21:45 ARG (00:45 UTC del día siguiente)
+    - cron: "45 0 * * *"
   workflow_dispatch:
 
 permissions:
