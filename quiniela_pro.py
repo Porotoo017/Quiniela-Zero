@@ -182,7 +182,7 @@ def ejecutar_ciclo():
             f.write(reporte)
         
         # Si hubo datos y el bot encontró un número NUEVO, enviamos a Telegram
-        if cambios:
+        if True:
             enviar_telegram(reporte)
         
     return cambios
