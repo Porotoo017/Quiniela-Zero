@@ -40,9 +40,10 @@ def enviar_telegram(mensaje):
         return
     try:
         url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-        payload = {"chat_id": TG_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
-        requests.post(url, json=payload, timeout=10)
-        logging.info("Mensaje enviado a Telegram.")
+        # SACAMOS EL MARKDOWN PARA EVITAR ERRORES DE FORMATO
+        payload = {"chat_id": TG_CHAT_ID, "text": mensaje}
+        respuesta = requests.post(url, json=payload, timeout=10)
+        logging.info(f"Respuesta de Telegram: {respuesta.status_code} - {respuesta.text}")
     except Exception as e:
         logging.error(f"Error enviando a Telegram: {e}")
 
@@ -148,7 +149,7 @@ def ejecutar_ciclo():
             if ultimo:
                 hubo_datos = True
                 candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-                reporte += f"*Lotería: {loteria['nombre']}*\nÚltimo número: {ultimo} (Historial)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
+                reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo} (Historial)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
             continue
 
         hubo_datos = True
@@ -163,7 +164,7 @@ def ejecutar_ciclo():
                 logging.info(f"{loteria['nombre']}: Sin cambios en la web.")
                 top, ultimo = run_analytics(loteria["nombre"])
                 candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-                reporte += f"*Lotería: {loteria['nombre']}*\nÚltimo número: {ultimo} (Sin cambios)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
+                reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo} (Sin cambios)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
                 continue
                 
             conn.execute(
@@ -174,15 +175,14 @@ def ejecutar_ciclo():
 
         top, ultimo = run_analytics(loteria["nombre"])
         candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-        reporte += f"*Lotería: {loteria['nombre']}*\nÚltimo número: {ultimo}\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
+        reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo}\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
         logging.info(f"{loteria['nombre']}: Nuevo registro. Último: {ultimo}. Candidatos: {candidatos}")
     
     if hubo_datos:
         with open("resultados.txt", "w", encoding="utf-8") as f:
             f.write(reporte)
         
-        # ⚠️ PRUEBA FORZADA: Cambiamos "if cambios:" por "if True:"
-        if True:
+        if True: # PRUEBA FORZADA
             enviar_telegram(reporte)
         
     return cambios
