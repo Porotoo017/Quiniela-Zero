@@ -14,7 +14,6 @@ LOG_FILE = "quiniela_ops.log"
 INTERVALO = 3600
 
 LOTERIAS = [
-    # {"nombre": "CIUDAD", "url": "https://www.loteriadelaciudad.gob.ar/resultados.html", "selector": ".premio"},
     {"nombre": "PROVINCIA", "url": "https://www.loteria.gba.gov.ar/index.php/resultados", "selector": "N/A"}
 ]
 
@@ -52,7 +51,6 @@ def scrape(loteria_cfg):
         numeros = [nodo.strip() for nodo in nodos_4_digitos]
 
         if not numeros:
-            logging.warning(f"Fallo en scraping {loteria_cfg['nombre']}: No se encontraron números.")
             return None
 
         return ",".join(numeros[-20:])
@@ -85,27 +83,28 @@ def run_analytics(loteria_nombre):
 def ejecutar_ciclo():
     cambios = False
     reporte = "=== REPORTE DE QUINIELA-ZERO ===\n\n"
+    hubo_datos = False
     
     for loteria in LOTERIAS:
         data = scrape(loteria)
         if not data:
-            reporte += f"Lotería: {loteria['nombre']}\nNo se pudieron obtener datos en este intento.\n\n"
+            # Si falla o está vacía, NO sobreescribimos el reporte anterior
+            logging.warning(f"{loteria['nombre']}: No se encontraron números.")
             continue
+
+        hubo_datos = True
 
         with sqlite3.connect(DB_NAME) as conn:
             prev = conn.execute(
                 "SELECT datos FROM sorteos WHERE loteria=? ORDER BY id DESC LIMIT 1",
                 (loteria["nombre"],),
             ).fetchone()
+            
             if prev and prev[0] == data:
                 logging.info(f"{loteria['nombre']}: Sin cambios.")
-                # Aunque no haya cambios, lo agregamos al reporte
                 top, ultimo = run_analytics(loteria["nombre"])
                 candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-                reporte += f"Lotería: {loteria['nombre']}\n"
-                reporte += f"Último número: {ultimo} (Sin cambios nuevos)\n"
-                reporte += f"Candidatos: {', '.join(candidatos)}\n"
-                reporte += "-" * 30 + "\n\n"
+                reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo} (Sin cambios nuevos)\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
                 continue
                 
             conn.execute(
@@ -116,18 +115,13 @@ def ejecutar_ciclo():
 
         top, ultimo = run_analytics(loteria["nombre"])
         candidatos = [f"{n} ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
-        
-        # Armamos el texto del reporte
-        reporte += f"Lotería: {loteria['nombre']}\n"
-        reporte += f"Último número: {ultimo}\n"
-        reporte += f"Candidatos (Frecuencia histórica): {', '.join(candidatos)}\n"
-        reporte += "-" * 30 + "\n\n"
-
+        reporte += f"Lotería: {loteria['nombre']}\nÚltimo número: {ultimo}\nCandidatos: {', '.join(candidatos)}\n----------------\n\n"
         logging.info(f"{loteria['nombre']}: Nuevo registro. Último: {ultimo}. Candidatos: {candidatos}")
     
-    # Guardamos el reporte en un archivo de texto
-    with open("resultados.txt", "w", encoding="utf-8") as f:
-        f.write(reporte)
+    # Solo escribimos el archivo si realmente hubo datos válidos
+    if hubo_datos:
+        with open("resultados.txt", "w", encoding="utf-8") as f:
+            f.write(reporte)
         
     return cambios
 
