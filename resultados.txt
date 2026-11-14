@@ -6,8 +6,8 @@
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>NOCTURNA</b>
-🔢 Último: <code>83</code>
-🎯 Candidatos: <b>85</b> (50.0%), <b>44</b> (50.0%)
+🔢 Último: <code>80</code>
+🎯 Candidatos: <b>14</b> (50.0%), <b>86</b> (50.0%)
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>MATUTINA</b>
