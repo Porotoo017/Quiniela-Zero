@@ -10,6 +10,11 @@
 🎯 Candidatos: <b>53</b> (3.8%), <b>47</b> (3.5%), <b>21</b> (3.5%)
 ➖➖➖➖➖➖➖➖➖➖
 
+🎲 Turno: <b>LA PREVIA</b>
+🔢 Último: <code>30</code>
+🎯 Candidatos: <b>77</b> (25.0%), <b>60</b> (25.0%), <b>45</b> (25.0%)
+➖➖➖➖➖➖➖➖➖➖
+
 🎲 Turno: <b>MATUTINA</b>
 🔢 Último: <code>54</code>
 🎯 Candidatos: <b>38</b> (3.9%), <b>36</b> (3.5%), <b>31</b> (3.2%)
