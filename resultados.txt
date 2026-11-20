@@ -1,10 +1,5 @@
 🏆 <b>REPORTE TERMINATOR V4 (INDUSTRIAL)</b> 🏆
 
-🎲 Turno: <b>NOCTURNA</b>
-🔢 Último: <code>40</code>
-🎯 Candidatos: <b>70</b> (3.7%), <b>10</b> (3.3%), <b>08</b> (3.3%)
-➖➖➖➖➖➖➖➖➖➖
-
 🎲 Turno: <b>MATUTINA</b>
 🔢 Último: <code>54</code>
 🎯 Candidatos: <b>38</b> (3.9%), <b>36</b> (3.5%), <b>31</b> (3.2%)
@@ -13,5 +8,10 @@
 🎲 Turno: <b>VESPERTINA</b>
 🔢 Último: <code>40</code>
 🎯 Candidatos: <b>60</b> (5.8%), <b>51</b> (4.2%), <b>42</b> (3.9%)
+➖➖➖➖➖➖➖➖➖➖
+
+🎲 Turno: <b>NOCTURNA</b>
+🔢 Último: <code>82</code>
+🎯 Candidatos: <b>77</b> (5.6%), <b>62</b> (4.2%), <b>54</b> (3.5%)
 ➖➖➖➖➖➖➖➖➖➖
 
