@@ -186,7 +186,6 @@ def scrape_web(session: requests.Session) -> str | None:
 def run_analytics(loteria: str, turno: str) -> tuple[list[tuple[str, float]], str | None]:
     try:
         with sqlite3.connect(DB_NAME) as conn:
-            # CORRECCIÓN CRÍTICA AQUÍ: Se agregó el 'AND' en la consulta SQL
             filas = conn.execute(
                 "SELECT datos FROM sorteos WHERE loteria=? AND turno=? ORDER BY id", 
                 (loteria, turno)
@@ -238,7 +237,8 @@ def run_analytics(loteria: str, turno: str) -> tuple[list[tuple[str, float]], st
 
 def ejecutar_ciclo(session: requests.Session) -> bool:
     cambios = False
-    reporte = "🏆 <b>REPORTE TERMINATOR V4 (INDUSTRIAL)</b> 🏆\n\n"
+    fecha_hoy = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%d/%m/%Y")
+    reporte = f"🏆 <b>REPORTE TERMINATOR V4 (INDUSTRIAL) - {fecha_hoy}</b> 🏆\n\n"
     
     ahora_arg = datetime.datetime.utcnow() - datetime.timedelta(hours=3)
     hora_actual = ahora_arg.hour
@@ -280,9 +280,9 @@ def ejecutar_ciclo(session: requests.Session) -> bool:
     else:
         manejar_fallo_scraping()
 
-    turnos_analizar = [turno_detectado, "MATUTINA", "VESPERTINA", "NOCTURNA"]
+    turnos_analizar = ["LA PREVIA", "EL PRIMERO", "MATUTINA", "VESPERTINA", "NOCTURNA"]
     
-    for t in set(turnos_analizar): 
+    for t in turnos_analizar: 
         top, ultimo = run_analytics("PROVINCIA", t)
         if ultimo:
             candidatos = [f"<b>{n}</b> ({p:.1%})" for n, p in top] or ["sin datos suficientes"]
