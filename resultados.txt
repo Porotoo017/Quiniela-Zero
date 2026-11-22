@@ -16,7 +16,7 @@
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>NOCTURNA</b>
-🔢 Último: <code>84</code>
-🎯 Candidatos: <b>36</b> (3.3%), <b>13</b> (3.3%), <b>60</b> (3.3%)
+🔢 Último: <code>37</code>
+🎯 Candidatos: <b>41</b> (50.0%), <b>74</b> (50.0%)
 ➖➖➖➖➖➖➖➖➖➖
 
