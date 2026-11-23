@@ -5,6 +5,11 @@
 🎯 Candidatos: <b>77</b> (25.0%), <b>60</b> (25.0%), <b>45</b> (25.0%)
 ➖➖➖➖➖➖➖➖➖➖
 
+🎲 Turno: <b>PRIMERA</b>
+🔢 Último: <code>99</code>
+🎯 Candidatos: <b>65</b> (4.0%), <b>62</b> (4.0%), <b>83</b> (3.3%)
+➖➖➖➖➖➖➖➖➖➖
+
 🎲 Turno: <b>MATUTINA</b>
 🔢 Último: <code>54</code>
 🎯 Candidatos: <b>38</b> (3.9%), <b>36</b> (3.5%), <b>31</b> (3.2%)
