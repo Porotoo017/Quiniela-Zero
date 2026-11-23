@@ -1,28 +1,13 @@
 import requests
-from bs4 import BeautifulSoup
+from quiniela_pro import get_session, parse_gba_html, URL_PROVINCIA
 
-URLS = [
-    ("CIUDAD", "https://www.loteriadelaciudad.gob.ar/resultados.html", ".premio"),
-    ("PROVINCIA", "https://www.loteria.gba.gov.ar/index.php/resultados", ".premio"),
-]
-
-for nombre, url, selector in URLS:
-    print(f"\n=== {nombre} ===")
-    try:
-        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
-        print(f"HTTP {r.status_code} | {len(r.text)} bytes")
-        soup = BeautifulSoup(r.text, "html.parser")
-        items = [s.get_text(strip=True) for s in soup.select(selector)]
-        print(f"Elementos '{selector}': {len(items)}")
-        if items:
-            print(f"Primeros 5: {items[:5]}")
-        else:
-            clases = set()
-            for tag in soup.find_all(class_=True):
-                for c in tag.get("class", []):
-                    low = c.lower()
-                    if "prem" in low or "result" in low or "num" in low:
-                        clases.add(c)
-            print(f"Clases candidatas: {sorted(clases)[:10] or 'ninguna'}")
-    except Exception as e:
-        print(f"ERROR: {e}")
+session = get_session()
+print(f"Consultando {URL_PROVINCIA} ...")
+r = session.get(URL_PROVINCIA, timeout=20)
+print(f"HTTP {r.status_code} | {len(r.text)} bytes")
+res = parse_gba_html(r.text)
+print("Estado parser:", res["status"], "| Motivo:", res.get("reason") or "OK")
+print("Turnos listos:", len(res["turnos"]))
+for t in res["turnos"]:
+    print(f"  - {t['turno']} ({t['fecha_raw']} {t['nro_sorteo']}): {t['datos'][:35]}...")
+print("Turnos pendientes (----):", res["pendientes"])

@@ -1,13 +1,13 @@
 name: Bot Quiniela
 
 on:
-  push:
   schedule:
-    - cron: "0 14 * * *"
-    - cron: "45 15 * * *"
-    - cron: "45 18 * * *"
-    - cron: "45 21 * * *"
-    - cron: "45 0 * * *"
+    # Lunes a Sábado en ART (UTC-3): Previa 10:35, Primera 12:20, Matutina 15:20, Vespertina 18:20, Nocturna 21:25
+    - cron: "35 13 * * 1-6"
+    - cron: "20 15 * * 1-6"
+    - cron: "20 18 * * 1-6"
+    - cron: "20 21 * * 1-6"
+    - cron: "25 0 * * 0,2,3,4,5,6"
   workflow_dispatch:
 
 permissions:
@@ -17,7 +17,6 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -48,6 +47,10 @@ jobs:
         run: |
           git config user.name "quiniela-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add quiniela_pro.db resultados.txt fallos_consecutivos.txt || exit 0
-          git commit -m "data: actualización $(date -u +%Y-%m-%dT%H:%M)" || exit 0
-          git push
+          git add quiniela_pro.db resultados.txt fallos_consecutivos.txt
+          if ! git diff --staged --quiet; then
+            git commit -m "data: actualización $(date -u +%Y-%m-%dT%H:%M)"
+            git push
+          else
+            echo "Sin cambios para commitear."
+          fi
