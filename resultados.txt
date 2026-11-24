@@ -1,12 +1,5 @@
 🏆 <b>REPORTE TERMINATOR V4 (INDUSTRIAL) - 23/11/2026</b> 🏆
 
-🆕 <b>EXTRACTOS OFICIALES PUBLICADOS</b>
-• <b>LA PREVIA</b> (23/11/2026): Cabeza <code>3998</code> | Top 5: <code>3998 · 7737 · 5387 · 7404 · 6181</code>
-• <b>PRIMERA</b> (23/11/2026): Cabeza <code>9507</code> | Top 5: <code>9507 · 6490 · 9462 · 9244 · 5337</code>
-• <b>MATUTINA</b> (23/11/2026): Cabeza <code>7736</code> | Top 5: <code>7736 · 6884 · 9475 · 0614 · 9980</code>
-• <b>VESPERTINA</b> (23/11/2026): Cabeza <code>3356</code> | Top 5: <code>3356 · 9490 · 0430 · 2635 · 3158</code>
-• <b>NOCTURNA</b> (23/11/2026): Cabeza <code>7877</code> | Top 5: <code>7877 · 9988 · 6213 · 8060 · 6256</code>
-
 🎲 Turno: <b>LA PREVIA</b>
 🔢 Último: <code>21</code>
 🎯 Candidatos: <b>51</b> (50.0%), <b>34</b> (50.0%)
