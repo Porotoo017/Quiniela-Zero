@@ -1,23 +1,29 @@
 🏆 <b>REPORTE TERMINATOR V4 (INDUSTRIAL) - 24/11/2026</b> 🏆
 
+🆕 <b>EXTRACTOS OFICIALES PUBLICADOS</b>
+• <b>LA PREVIA</b> (24/11/2026): Cabeza <code>0388</code> | Top 5: <code>0388 · 7582 · 0600 · 3991 · 2809</code>
+• <b>PRIMERA</b> (24/11/2026): Cabeza <code>0924</code> | Top 5: <code>0924 · 8213 · 5281 · 7228 · 7210</code>
+• <b>MATUTINA</b> (24/11/2026): Cabeza <code>8413</code> | Top 5: <code>8413 · 6956 · 2563 · 8843 · 2740</code>
+• <b>VESPERTINA</b> (24/11/2026): Cabeza <code>3930</code> | Top 5: <code>3930 · 8881 · 5468 · 8730 · 2669</code>
+
 🎲 Turno: <b>LA PREVIA</b>
-🔢 Último: <code>21</code>
-🎯 Candidatos: <b>51</b> (50.0%), <b>34</b> (50.0%)
+🔢 Último: <code>10</code>
+🎯 Candidatos: <b>73</b> (3.9%), <b>10</b> (3.9%), <b>20</b> (3.3%)
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>PRIMERA</b>
-🔢 Último: <code>60</code>
-🎯 Candidatos: <b>08</b> (50.0%), <b>06</b> (50.0%)
+🔢 Último: <code>35</code>
+🎯 Candidatos: <b>12</b> (3.5%), <b>61</b> (3.2%), <b>37</b> (3.2%)
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>MATUTINA</b>
-🔢 Último: <code>01</code>
-🎯 Candidatos: <b>03</b> (4.2%), <b>19</b> (3.5%), <b>72</b> (3.1%)
+🔢 Último: <code>71</code>
+🎯 Candidatos: <b>98</b> (4.5%), <b>54</b> (4.5%), <b>45</b> (3.4%)
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>VESPERTINA</b>
-🔢 Último: <code>13</code>
-🎯 Candidatos: <b>68</b> (50.0%), <b>70</b> (50.0%)
+🔢 Último: <code>95</code>
+🎯 Candidatos: <b>18</b> (4.6%), <b>54</b> (3.7%), <b>92</b> (3.7%)
 ➖➖➖➖➖➖➖➖➖➖
 
 🎲 Turno: <b>NOCTURNA</b>
