@@ -947,11 +947,11 @@ def analizar_estadisticas(
     incluir_cruce_opuesto: bool = True,
 ) -> dict[str, Any]:
     """
-    Motor de estimación estadística con:
-      - Frecuencia simple y ponderada por recencia
-      - Rachas calientes y números fríos (atraso prolongado)
-      - Cruce Provincia <-> Ciudad
-      - Nivel de confianza e intervalo de error al 95%
+    Motor Cuantitativo Multi-Variable Pro Max:
+      - Z-Score Binomial + EWMA multi-horizonte (λ=0.08 / 0.012)
+      - Análisis de supervivencia (Z_atraso = (g - Ḡ)/σ_G)
+      - Markov Lift condicionado a la última cabeza
+      - Cruce Provincia <-> Ciudad + equilibrio de terminaciones Chi²
     """
     with sqlite3.connect(db_path) as conn:
         query = "SELECT fecha_sorteo, turno, datos FROM sorteos WHERE loteria=? AND fecha_sorteo != ''"
@@ -980,52 +980,97 @@ def analizar_estadisticas(
         return {"loteria": loteria, "total_sorteos": 0, "candidatos": [], "mensaje": "Sin historial suficiente"}
 
     frecuencia_simple: Counter[str] = Counter()
-    frecuencia_ponderada: defaultdict[str, float] = defaultdict(float)
-    ultima_aparicion: dict[str, int] = {}
-    ultimas_cabezas_opuestas: Counter[str] = Counter()
+    frecuencia_sorteos: Counter[str] = Counter()
+    ewma_short: defaultdict[str, float] = defaultdict(float)
+    ewma_long: defaultdict[str, float] = defaultdict(float)
+    head_weighted: defaultdict[str, float] = defaultdict(float)
+    indices_aparicion: defaultdict[str, list[int]] = defaultdict(list)
+    ultimas_cabezas_opuestas: defaultdict[str, float] = defaultdict(float)
+    term_recent: Counter[int] = Counter()
+    markov_head: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    head_totals: Counter[str] = Counter()
 
+    prev_head = None
     for idx, (_, _, datos) in enumerate(filas):
-        peso = math.exp(-0.015 * max(0, total_sorteos - 1 - idx))
+        age = max(0, total_sorteos - 1 - idx)
+        w_short = math.exp(-0.08 * age)
+        w_long = math.exp(-0.012 * age)
         nums = [n[-2:] for n in datos.split(",") if len(n) >= 2]
-        vistas_en_sorteo = set()
+        vistas = set()
+        curr_head = nums[0] if nums else None
         for pos, n2 in enumerate(nums):
             frecuencia_simple[n2] += 1
-            bonus_cabeza = 1.6 if pos == 0 else 1.0
-            frecuencia_ponderada[n2] += peso * bonus_cabeza
-            if n2 not in vistas_en_sorteo:
-                ultima_aparicion[n2] = idx
-                vistas_en_sorteo.add(n2)
+            pos_w = 1.8 if pos == 0 else (1.25 if pos < 5 else 1.0)
+            head_weighted[n2] += w_long * pos_w
+            ewma_short[n2] += w_short * pos_w
+            ewma_long[n2] += w_long * pos_w
+            if n2 not in vistas:
+                vistas.add(n2)
+                frecuencia_sorteos[n2] += 1
+                indices_aparicion[n2].append(idx)
+                if age < 14 and n2.isdigit():
+                    term_recent[int(n2) % 10] += 1
+                if prev_head is not None:
+                    markov_head[prev_head][n2] += 1
+        if prev_head is not None:
+            head_totals[prev_head] += 1
+        prev_head = curr_head
 
-    # Cruce Provincia <-> Ciudad en los últimos 30 sorteos de la jurisdicción opuesta
-    for _, _, datos_op in filas_op[-30:]:
+    for idx_op, (_, _, datos_op) in enumerate(filas_op[-25:]):
+        rec = math.exp(-0.07 * max(0, len(filas_op[-25:]) - 1 - idx_op))
         nums_op = [n[-2:] for n in datos_op.split(",") if len(n) >= 2]
-        if nums_op:
-            ultimas_cabezas_opuestas[nums_op[0]] += 1.5
-            for n2 in nums_op[1:5]:
-                ultimas_cabezas_opuestas[n2] += 0.5
+        for pos, n2 in enumerate(nums_op):
+            mult = 2.0 if pos == 0 else (0.8 if pos < 5 else 0.25)
+            ultimas_cabezas_opuestas[n2] += rec * mult
 
-    ultimo_set = {n[-2:] for n in filas[-1][2].split(",") if len(n) >= 2}
-    max_w = max(frecuencia_ponderada.values()) or 1.0
-    scores: list[tuple[str, float, float, int]] = []
+    ultimo_nums = [n[-2:] for n in filas[-1][2].split(",") if len(n) >= 2]
+    ultimo_set = set(ultimo_nums)
+    ultima_cabeza = ultimo_nums[0] if ultimo_nums else None
 
+    max_hw = max(head_weighted.values(), default=1.0) or 1.0
+    max_es = max(ewma_short.values(), default=1.0) or 1.0
+    max_el = max(ewma_long.values(), default=1.0) or 1.0
+    max_opp = max(ultimas_cabezas_opuestas.values(), default=1.0) or 1.0
+    exp_term = max(1.0, sum(term_recent.values()) / 10.0)
+    n_obs = max(1, total_sorteos * 20)
+
+    scores = []
     for num_int in range(100):
         n2 = f"{num_int:02d}"
         if evitar_repeticion_inmediata and n2 in ultimo_set:
             continue
-        atraso = (total_sorteos - 1) - ultima_aparicion.get(n2, -1)
-        freq_abs = frecuencia_simple[n2]
-        freq_rel = freq_abs / (total_sorteos * 20.0)
-        score_w = frecuencia_ponderada[n2] / max_w
-        score_atraso = min(atraso / 25.0, 1.0)
-        score_cruce = min(ultimas_cabezas_opuestas[n2] / 4.0, 1.0)
-        total_score = 0.55 * score_w + 0.25 * score_atraso + 0.20 * score_cruce
-        scores.append((n2, total_score, freq_rel, atraso))
+        idxs = indices_aparicion[n2]
+        atraso = (total_sorteos - 1) - (idxs[-1] if idxs else -1)
+        gaps = [idxs[j] - idxs[j - 1] for j in range(1, len(idxs))] if len(idxs) >= 2 else [5]
+        mean_g = max(1.0, sum(gaps) / len(gaps))
+        std_g = max(1.5, math.sqrt(sum((g - mean_g) ** 2 for g in gaps) / len(gaps)))
+        z_gap = (atraso - mean_g) / std_g
+        surv_due = sum(1 for g in gaps if g <= atraso) / len(gaps)
+
+        p_base = (frecuencia_sorteos[n2] + 1.0) / (total_sorteos + 5.0)
+        if ultima_cabeza and head_totals[ultima_cabeza] >= 5:
+            p_cond = (markov_head[ultima_cabeza][n2] + 0.5) / (head_totals[ultima_cabeza] + 2.5)
+            markov_lift = max(0.4, min(3.0, p_cond / p_base))
+        else:
+            markov_lift = 1.0
+
+        momentum = (ewma_short[n2] / max_es) - (ewma_long[n2] / max_el)
+        term_def = max(-1.0, min(1.0, (exp_term - term_recent[num_int % 10]) / exp_term))
+
+        f_freq = head_weighted[n2] / max_hw
+        f_mom = max(0.0, min(1.0, momentum + 0.5))
+        f_surv = 0.6 * surv_due + 0.4 * max(0.0, min(1.0, (z_gap + 1.5) / 4.0))
+        f_mk = max(0.0, min(1.0, (markov_lift - 0.5) / 2.0))
+        f_cross = (ultimas_cabezas_opuestas[n2] / max_opp) if incluir_cruce_opuesto else 0.0
+        f_bal = (term_def + 1.0) / 2.0
+
+        total_score = 0.28 * f_freq + 0.16 * f_mom + 0.22 * f_surv + 0.16 * f_mk + 0.12 * f_cross + 0.06 * f_bal
+        freq_rel = frecuencia_simple[n2] / float(n_obs)
+        scores.append((n2, total_score, freq_rel, atraso, z_gap, markov_lift))
 
     scores.sort(key=lambda x: x[1], reverse=True)
     candidatos = []
-    # Intervalo de confianza binomial aproximado al 95% sobre N = total_sorteos * 20 extracciones
-    n_obs = max(1, total_sorteos * 20)
-    for n2, score, freq_rel, atraso in scores[:top_n]:
+    for n2, score, freq_rel, atraso, z_gap, lift in scores[:top_n]:
         margen = 1.96 * math.sqrt(max(0.0, freq_rel * (1.0 - freq_rel)) / n_obs)
         confianza = "Alta" if total_sorteos >= 120 else ("Media" if total_sorteos >= 40 else "Baja")
         candidatos.append(
@@ -1034,6 +1079,8 @@ def analizar_estadisticas(
                 "score": round(score, 4),
                 "frecuencia_pct": round(freq_rel * 100.0, 2),
                 "margen_error_pct": round(margen * 100.0, 2),
+                "z_atraso": round(z_gap, 2),
+                "markov_lift": round(lift, 2),
                 "atraso_sorteos": atraso,
                 "confianza": confianza,
                 "resumen": (

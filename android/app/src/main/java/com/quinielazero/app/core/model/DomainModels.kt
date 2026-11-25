@@ -79,13 +79,20 @@ data class SorteoDomain(
 data class CandidatoEstadistico(
     val numero: String,
     val score: Double,
+    val puntajeCuantitativo: Int, // 0..100
     val frecuenciaPct: Double,
     val margenErrorPct: Double,
+    val zScoreFrecuencia: Double,
+    val zScoreAtraso: Double,
+    val markovLift: Double,
+    val ewmaMomentum: Double,
+    val tasaSupervivenciaPct: Double,
     val apariciones: Int,
     val atrasoSorteos: Int,
     val rachaCaliente: Boolean,
     val cruceCoincidente: Boolean,
     val confianza: String,
+    val significado: String,
     val resumen: String
 )
 
@@ -93,6 +100,14 @@ data class PuntoEvolucion(
     val etiquetaPeriodo: String,
     val frecuenciaPct: Double,
     val conteo: Int
+)
+
+data class NumeroConStats(
+    val significado: NumeroSignificado,
+    val apariciones: Int,
+    val atrasoSorteos: Int,
+    val ultimaFecha: String,
+    val enTopMotor: Boolean
 )
 
 data class ResultadoEstadistico(
@@ -107,6 +122,9 @@ data class ResultadoEstadistico(
     val candidatos: List<CandidatoEstadistico>,
     val evolucionTop: List<PuntoEvolucion>,
     val numerosFrios: List<CandidatoEstadistico>,
+    val efectividadWalkForwardPct: Double,
+    val entropiaShannonBits: Double,
+    val chiCuadradoTerminaciones: Double,
     val ultimoActualizado: String
 )
 
@@ -150,7 +168,7 @@ data class ConfiguracionApp(
     val morningMinute: Int = 0,
     val nightHour: Int = 23,
     val nightMinute: Int = 0,
-    val mutedDays: Set<Int> = emptySet(), // 1=Mon .. 7=Sun (java.time DayOfWeek.value)
+    val mutedDays: Set<Int> = emptySet(),
     val dailyLimitArs: Double = 5000.0,
     val weeklyLimitArs: Double = 20000.0,
     val avoidImmediateRepeat: Boolean = true,

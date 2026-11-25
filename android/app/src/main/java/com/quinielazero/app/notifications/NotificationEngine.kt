@@ -153,11 +153,14 @@ object NotificationContentBuilder {
 object NotificationScheduler {
     private const val REQ_MORNING = 9001
     private const val REQ_NIGHT = 23001
+    private const val REQ_SYNC_BASE = 30100
     const val EXTRA_KIND = "notif_kind"
     const val KIND_MORNING = "MORNING"
     const val KIND_NIGHT = "NIGHT"
+    const val KIND_AUTO_SYNC = "AUTO_SYNC"
 
     private val ZONE_AR = ZoneId.of("America/Argentina/Buenos_Aires")
+    private val DRAW_SYNC_WINDOWS_ART = listOf(10 to 40, 12 to 25, 15 to 25, 18 to 25, 21 to 30)
 
     fun computeNextTriggerMillis(
         hour: Int,
@@ -176,14 +179,19 @@ object NotificationScheduler {
         scheduleSingle(context, KIND_MORNING, REQ_MORNING, config.morningHour, config.morningMinute)
         scheduleSingle(context, KIND_NIGHT, REQ_NIGHT, config.nightHour, config.nightMinute)
 
+        // Programar auto-guardado silencioso inmediatamente después de cada turno oficial en ART
+        DRAW_SYNC_WINDOWS_ART.forEachIndexed { idx, (h, m) ->
+            scheduleSingle(context, KIND_AUTO_SYNC, REQ_SYNC_BASE + idx, h, m)
+        }
+
         val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-        val healthWork = PeriodicWorkRequestBuilder<SourceHealthWorker>(6, TimeUnit.HOURS)
+        val autoSyncWork = PeriodicWorkRequestBuilder<AutoSyncDrawsWorker>(1, TimeUnit.HOURS)
             .setConstraints(constraints)
             .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "quiniela_source_health_monitor",
+            "quiniela_auto_sync_draws",
             ExistingPeriodicWorkPolicy.KEEP,
-            healthWork
+            autoSyncWork
         )
     }
 
@@ -225,15 +233,19 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                 calendar.updateHolidayConfig(config.holidayMode, config.holidayDates)
                 val today = calendar.todayArgentina()
 
-                // Reprogramar siguiente día
                 NotificationScheduler.scheduleAll(context, config)
+
+                val syncMgr = DataSourcesManager(db.sorteoDao(), db.fuenteSaludDao(), calendar)
+                runCatching { syncMgr.syncAllSources(includeDirectScrape = true) }
+
+                // Si es alarma silenciosa post-sorteo, solo auto-guarda los sorteos en el historial Room
+                if (kind == NotificationScheduler.KIND_AUTO_SYNC) {
+                    return@launch
+                }
 
                 if (today.dayOfWeek.value in config.mutedDays) {
                     return@launch
                 }
-
-                val syncMgr = DataSourcesManager(db.sorteoDao(), db.fuenteSaludDao(), calendar)
-                runCatching { syncMgr.syncAllSources(includeDirectScrape = true) }
 
                 val draws = db.sorteoDao().getAllOnce().mapNotNull { it.toDomain() }
                 calendar.calibrateFromHistory(draws)
@@ -319,12 +331,13 @@ class BootReceiver : BroadcastReceiver() {
     }
 }
 
-class SourceHealthWorker(
+class AutoSyncDrawsWorker(
     appContext: Context,
     params: WorkerParameters
 ) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
         val db = QuinielaDatabase.getInstance(applicationContext)
+        HistorialBootstrap(applicationContext, db).ensureSeededFromAssets()
         val calendar = SorteoCalendarProvider()
         val mgr = DataSourcesManager(db.sorteoDao(), db.fuenteSaludDao(), calendar)
         val report = runCatching { mgr.syncAllSources(includeDirectScrape = true) }.getOrNull()

@@ -7,8 +7,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.quinielazero.app.ui.QuinielaViewModel
 import com.quinielazero.app.ui.screens.QuinielaZeroRoot
 import com.quinielazero.app.ui.theme.QuinielaZeroTheme
@@ -27,6 +31,17 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val state by viewModel.uiState.collectAsState()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        viewModel.onAppResumed()
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
+
             QuinielaZeroTheme(themeMode = state.config.themeMode) {
                 QuinielaZeroRoot(
                     state = state,

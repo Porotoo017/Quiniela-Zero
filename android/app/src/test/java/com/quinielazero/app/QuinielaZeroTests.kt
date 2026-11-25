@@ -5,6 +5,7 @@ import com.quinielazero.app.core.calendar.SorteoCalendarProvider
 import com.quinielazero.app.core.model.BoletaJugada
 import com.quinielazero.app.core.model.EstadoVerificacion
 import com.quinielazero.app.core.model.Jurisdiccion
+import com.quinielazero.app.core.model.QuinielaMeanings
 import com.quinielazero.app.core.model.SorteoDomain
 import com.quinielazero.app.core.model.TurnoSorteo
 import com.quinielazero.app.core.model.VentanaAnalisis
@@ -187,6 +188,34 @@ class QuinielaZeroTests {
             listOf("14")
         )
         assertTrue(nightSunBody.contains("Hoy domingo no hubo sorteos"))
+    }
+
+
+    @Test
+    fun meanings_table_complete_and_quantitative_metrics_populated() = runBlocking {
+        assertEquals(100, QuinielaMeanings.todos.size)
+        assertEquals("El Muerto que habla", QuinielaMeanings.buscarPorNumero("48")?.significado)
+        assertEquals("Los Huevos", QuinielaMeanings.buscarPorNumero("00")?.significado)
+        assertEquals("Los Hermanos", QuinielaMeanings.buscarPorNumero("99")?.significado)
+
+        val cal = SorteoCalendarProvider()
+        val draws = (1..35).map { d ->
+            val date = LocalDate.of(2026, 10, 10).plusDays(d.toLong())
+            val safeDate = if (date.dayOfWeek.value == 7) date.plusDays(1) else date
+            SorteoDomain(
+                id = d.toLong(),
+                loteria = Jurisdiccion.PROVINCIA,
+                fechaIso = safeDate.toString(),
+                turno = TurnoSorteo.NOCTURNA,
+                numeros = sample20(1000 + d),
+                estado = EstadoVerificacion.VERIFICADO
+            )
+        }
+        val res = StatisticalEngine(cal).analyze(draws, Jurisdiccion.PROVINCIA, VentanaAnalisis.DIAS_90, topCount = 5)
+        assertTrue(res.entropiaShannonBits > 0.0)
+        assertTrue(res.candidatos.first().puntajeCuantitativo in 1..99)
+        assertTrue(res.candidatos.first().markovLift > 0.0)
+        assertTrue(res.candidatos.first().significado.isNotEmpty())
     }
 }
 

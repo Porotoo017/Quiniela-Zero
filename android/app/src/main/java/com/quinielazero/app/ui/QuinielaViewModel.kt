@@ -10,7 +10,9 @@ import com.quinielazero.app.core.model.BoletaJugada
 import com.quinielazero.app.core.model.ConfiguracionApp
 import com.quinielazero.app.core.model.FuenteSaludInfo
 import com.quinielazero.app.core.model.Jurisdiccion
+import com.quinielazero.app.core.model.NumeroConStats
 import com.quinielazero.app.core.model.PlusEvaluacion
+import com.quinielazero.app.core.model.QuinielaMeanings
 import com.quinielazero.app.core.model.ResultadoEstadistico
 import com.quinielazero.app.core.model.SorteoDomain
 import com.quinielazero.app.core.model.TurnoSorteo
@@ -41,6 +43,7 @@ data class MainUiState(
     val estadistica: ResultadoEstadistico? = null,
     val estadisticaOpuesta: ResultadoEstadistico? = null,
     val allDraws: List<SorteoDomain> = emptyList(),
+    val significadosConStats: List<NumeroConStats> = emptyList(),
     val tickets: List<BoletaJugada> = emptyList(),
     val plusNumbers: List<String> = listOf("07", "14", "22", "33", "48", "59", "71", "88"),
     val plusEvaluacion: PlusEvaluacion = QuinielaPlusEngine.validarCombinacion(listOf("07", "14", "22", "33", "48", "59", "71", "88")),
@@ -67,11 +70,12 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
     private val plusBoletasCount = MutableStateFlow(1)
     private val isBootstrapping = MutableStateFlow(true)
     private val isSyncing = MutableStateFlow(false)
-    private val syncBanner = MutableStateFlow("")
+    private val syncBanner = MutableStateFlow("Auto-guardado activo")
     private val offlineMode = MutableStateFlow(false)
     private val toastMessage = MutableStateFlow<String?>(null)
     private val statResult = MutableStateFlow<ResultadoEstadistico?>(null)
     private val oppositeResult = MutableStateFlow<ResultadoEstadistico?>(null)
+    private var lastAutoSyncMillis: Long = 0L
 
     private val drawsFlow = db.sorteoDao().observeAll().map { list ->
         list.mapNotNull { it.toDomain() }
@@ -124,6 +128,8 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
             QuinielaPlusEngine.validarCombinacion(plusNums, plusCnt)
         }
 
+        val meaningsStats = buildMeaningsStats(draws, jur, stat)
+
         MainUiState(
             isBootstrapping = booting,
             isSyncing = syncing,
@@ -133,6 +139,7 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
             estadistica = stat,
             estadisticaOpuesta = oppStat,
             allDraws = draws,
+            significadosConStats = meaningsStats,
             tickets = evaluateTicketsAgainstDraws(tickets, draws),
             plusNumbers = plusNums,
             plusEvaluacion = plusEval,
@@ -150,7 +157,6 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
             isBootstrapping.value = false
             NotificationScheduler.scheduleAll(getApplication(), configState.value)
 
-            // Recálculo automático ante cada ingreso de nuevos sorteos o cambio de filtro (invalida caché)
             combine(drawsFlow, selectedJurisdiccion, selectedVentana, configState) { draws, jur, win, cfg ->
                 Quad(draws, jur, win, cfg)
             }.collect { (draws, jur, win, cfg) ->
@@ -178,6 +184,46 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
         refreshFromSources(includeDirectScrape = true)
     }
 
+    private fun buildMeaningsStats(
+        draws: List<SorteoDomain>,
+        jur: Jurisdiccion,
+        stat: ResultadoEstadistico?
+    ): List<NumeroConStats> {
+        val jurDraws = draws.filter { it.loteria == jur }
+        val counts = IntArray(100)
+        val lastIdx = IntArray(100) { -1 }
+        val lastDate = Array(100) { "--" }
+
+        jurDraws.forEachIndexed { idx, d ->
+            val seen = BooleanArray(100)
+            d.numeros.forEach { num4 ->
+                val n2 = num4.takeLast(2).toIntOrNull() ?: return@forEach
+                if (n2 in 0..99) {
+                    counts[n2]++
+                    if (!seen[n2]) {
+                        seen[n2] = true
+                        if (lastIdx[n2] == -1) {
+                            lastIdx[n2] = idx
+                            lastDate[n2] = d.fechaIso
+                        }
+                    }
+                }
+            }
+        }
+        val topSet = stat?.candidatos?.map { it.numero }?.toSet().orEmpty()
+        return QuinielaMeanings.todos.map { sig ->
+            val idxNum = sig.numero.toIntOrNull() ?: 0
+            val gap = if (lastIdx[idxNum] >= 0) lastIdx[idxNum] else jurDraws.size
+            NumeroConStats(
+                significado = sig,
+                apariciones = counts[idxNum],
+                atrasoSorteos = gap,
+                ultimaFecha = lastDate[idxNum],
+                enTopMotor = sig.numero in topSet
+            )
+        }
+    }
+
     private fun evaluateTicketsAgainstDraws(tickets: List<BoletaJugada>, draws: List<SorteoDomain>): List<BoletaJugada> {
         return tickets.map { t ->
             val match = draws.find { it.loteria == t.jurisdiccion && it.fechaIso == t.fechaIso && it.turno == t.turno }
@@ -193,6 +239,13 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun onAppResumed() {
+        val now = System.currentTimeMillis()
+        if (now - lastAutoSyncMillis > 120_000L) {
+            refreshFromSources(includeDirectScrape = true)
+        }
+    }
+
     fun selectJurisdiccion(jur: Jurisdiccion) {
         selectedJurisdiccion.value = jur
     }
@@ -203,6 +256,7 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
 
     fun refreshFromSources(includeDirectScrape: Boolean = true) {
         if (isSyncing.value) return
+        lastAutoSyncMillis = System.currentTimeMillis()
         viewModelScope.launch {
             isSyncing.value = true
             val report: SyncReport = runCatching {
@@ -211,7 +265,11 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
                 SyncReport(0, 0, true, "Modo offline · Usando historial local guardado.")
             }
             offlineMode.value = report.offlineFallback
-            syncBanner.value = report.mensajeEstado
+            syncBanner.value = if (report.nuevosGuardados > 0) {
+                "Auto-guardado: +${report.nuevosGuardados} sorteos sumados al historial"
+            } else {
+                "Auto-guardado al día · Provincia & Ciudad"
+            }
             isSyncing.value = false
         }
     }
@@ -255,13 +313,14 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun togglePlusNumber(num2: String) {
+        val clean = num2.trim().takeLast(2).padStart(2, '0')
         val current = plusNumbersState.value.toMutableList()
-        if (num2 in current) {
-            current.remove(num2)
+        if (clean in current) {
+            current.remove(clean)
         } else if (current.size < 8) {
-            current.add(num2)
+            current.add(clean)
         } else {
-            toastMessage.value = "Quiniela Plus permite hasta 8 números. Tocá uno para reemplazarlo."
+            toastMessage.value = "Quiniela Plus permite 8 números. Tocá uno arriba para liberarlo."
             return
         }
         plusNumbersState.value = current.sorted()

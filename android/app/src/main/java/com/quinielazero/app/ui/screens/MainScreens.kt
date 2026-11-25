@@ -19,6 +19,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,7 +29,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,10 +48,12 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.StarOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -72,6 +74,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,20 +87,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.quinielazero.app.R
 import com.quinielazero.app.core.model.Jurisdiccion
+import com.quinielazero.app.core.model.NumeroConStats
 import com.quinielazero.app.core.model.ThemeMode
 import com.quinielazero.app.core.model.TurnoSorteo
 import com.quinielazero.app.core.model.VentanaAnalisis
@@ -106,12 +108,15 @@ import com.quinielazero.app.ui.QuinielaViewModel
 import com.quinielazero.app.ui.components.EvolutionChart
 import com.quinielazero.app.ui.components.GlassCard
 import com.quinielazero.app.ui.components.GoldNumberPill
+import com.quinielazero.app.ui.components.QuantScienceSummaryCard
 import com.quinielazero.app.ui.components.ResponsibleGamingFooter
+import com.quinielazero.app.ui.components.UniformPlusSlot
+import com.quinielazero.app.ui.components.UniformSelectorCell
 import com.quinielazero.app.ui.components.VerificationBadge
 import com.quinielazero.app.ui.theme.AlertRed
-import com.quinielazero.app.ui.theme.AmberWarm
 import com.quinielazero.app.ui.theme.CyanNeon
 import com.quinielazero.app.ui.theme.GoldBright
+import com.quinielazero.app.ui.theme.IvoryBg
 import com.quinielazero.app.ui.theme.NumericCellStyle
 import com.quinielazero.app.ui.theme.NumericDisplayStyle
 import com.quinielazero.app.ui.theme.ObsidianBg
@@ -122,10 +127,11 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 enum class AppTab(val label: String, val icon: ImageVector) {
-    ESTIMACIONES("Estimación", Icons.Outlined.AutoGraph),
+    ESTIMACIONES("Inicio", Icons.Outlined.AutoGraph),
     HISTORIAL("Historial", Icons.Outlined.History),
     PLUS("Q. Plus", Icons.Outlined.StarOutline),
-    JUGADAS("Mis Jugadas", Icons.Outlined.ConfirmationNumber),
+    SIGNIFICADOS("Sueños", Icons.Outlined.MenuBook),
+    JUGADAS("Jugadas", Icons.Outlined.ConfirmationNumber),
     AJUSTES("Fuentes", Icons.Outlined.Settings)
 }
 
@@ -139,8 +145,14 @@ fun QuinielaZeroRoot(
     var currentTab by remember { mutableStateOf(AppTab.ESTIMACIONES) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val isDarkActive = when (state.config.themeMode) {
+        ThemeMode.AUTO -> isSystemInDarkTheme()
+        ThemeMode.DARK -> true
+        ThemeMode.LIGHT -> false
+    }
+
     LaunchedEffect(Unit) {
-        delay(1450)
+        delay(1350)
         showSplash = false
     }
 
@@ -152,13 +164,29 @@ fun QuinielaZeroRoot(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Fondo temático acorde a la app en toda la aplicación
+        Image(
+            painter = painterResource(id = R.drawable.app_wallpaper_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    if (isDarkActive) Color(0xFF07080D).copy(alpha = 0.25f)
+                    else IvoryBg.copy(alpha = 0.88f)
+                )
+        )
+
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val isTablet = maxWidth >= 600.dp
 
             if (isTablet) {
-                Row(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                Row(modifier = Modifier.fillMaxSize()) {
                     NavigationRail(
-                        containerColor = MaterialTheme.colorScheme.surface,
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                         header = {
                             Image(
                                 painter = painterResource(id = R.drawable.logo_clover_circuit),
@@ -172,13 +200,13 @@ fun QuinielaZeroRoot(
                                 selected = currentTab == tab,
                                 onClick = { currentTab = tab },
                                 icon = { Icon(tab.icon, contentDescription = tab.label) },
-                                label = { Text(tab.label) }
+                                label = { Text(tab.label, maxLines = 1, softWrap = false) }
                             )
                         }
                     }
                     Scaffold(
                         snackbarHost = { SnackbarHost(snackbarHostState) },
-                        containerColor = MaterialTheme.colorScheme.background
+                        containerColor = Color.Transparent
                     ) { pad ->
                         TabContent(
                             tab = currentTab,
@@ -187,6 +215,7 @@ fun QuinielaZeroRoot(
                             isTablet = true,
                             snackbarHostState = snackbarHostState,
                             onRequestNotificationPermission = onRequestNotificationPermission,
+                            onNavigateToTab = { currentTab = it },
                             modifier = Modifier.padding(pad)
                         )
                     }
@@ -194,10 +223,10 @@ fun QuinielaZeroRoot(
             } else {
                 Scaffold(
                     snackbarHost = { SnackbarHost(snackbarHostState) },
-                    containerColor = MaterialTheme.colorScheme.background,
+                    containerColor = Color.Transparent,
                     bottomBar = {
                         NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.surface,
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                             tonalElevation = 8.dp
                         ) {
                             AppTab.entries.forEach { tab ->
@@ -205,7 +234,14 @@ fun QuinielaZeroRoot(
                                     selected = currentTab == tab,
                                     onClick = { currentTab = tab },
                                     icon = { Icon(tab.icon, contentDescription = tab.label) },
-                                    label = { Text(tab.label, maxLines = 1) }
+                                    label = {
+                                        Text(
+                                            text = tab.label,
+                                            fontSize = 10.sp,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -218,6 +254,7 @@ fun QuinielaZeroRoot(
                         isTablet = false,
                         snackbarHostState = snackbarHostState,
                         onRequestNotificationPermission = onRequestNotificationPermission,
+                        onNavigateToTab = { currentTab = it },
                         modifier = Modifier.padding(pad)
                     )
                 }
@@ -267,16 +304,8 @@ private fun CinematicSplashOverlay() {
                 .padding(bottom = 72.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "QUINIELA-ZERO",
-                style = MaterialTheme.typography.headlineMedium,
-                color = GoldBright
-            )
-            Text(
-                text = "PRO MAX · ESTADÍSTICA VERIFICADA",
-                style = MaterialTheme.typography.labelMedium,
-                color = CyanNeon
-            )
+            Text("QUINIELA-ZERO", style = MaterialTheme.typography.headlineMedium, color = GoldBright)
+            Text("PRO MAX · CIENCIA ESTADÍSTICA", style = MaterialTheme.typography.labelMedium, color = CyanNeon)
         }
     }
 }
@@ -289,6 +318,7 @@ private fun TabContent(
     isTablet: Boolean,
     snackbarHostState: SnackbarHostState,
     onRequestNotificationPermission: () -> Unit,
+    onNavigateToTab: (AppTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -296,13 +326,13 @@ private fun TabContent(
             AppTab.ESTIMACIONES -> EstimacionesScreen(state, viewModel, isTablet, snackbarHostState)
             AppTab.HISTORIAL -> HistorialScreen(state, viewModel)
             AppTab.PLUS -> QuinielaPlusScreen(state, viewModel)
+            AppTab.SIGNIFICADOS -> SignificadosScreen(state, viewModel, isTablet, onNavigateToTab)
             AppTab.JUGADAS -> MisJugadasScreen(state, viewModel)
             AppTab.AJUSTES -> FuentesYAjustesScreen(state, viewModel, onRequestNotificationPermission)
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EstimacionesScreen(
     state: MainUiState,
@@ -320,32 +350,28 @@ fun EstimacionesScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            // Encabezado con Logo + Botón Sync
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Image(
                         painter = painterResource(id = R.drawable.logo_clover_circuit),
                         contentDescription = "Emblema Quiniela-Zero",
                         modifier = Modifier.size(44.dp)
                     )
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(12.dp))
                     Column {
-                        Text("Quiniela-Zero", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                        Text("Quiniela-Zero Pro Max", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = state.syncStatusBanner.ifEmpty { "Historial Provincia & Ciudad" },
+                            text = state.syncStatusBanner.ifEmpty { "Auto-guardado activo · Provincia & Ciudad" },
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = VerifiedGreen
                         )
                     }
                 }
-                IconButton(
-                    onClick = { viewModel.refreshFromSources(true) },
-                    modifier = Modifier.size(48.dp)
-                ) {
+                IconButton(onClick = { viewModel.refreshFromSources(true) }, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Outlined.Refresh, contentDescription = "Actualizar resultados desde fuentes")
                 }
             }
@@ -372,10 +398,9 @@ fun EstimacionesScreen(
             }
         }
 
-        // Selector de Jurisdicción + Ventana + Top 3/5
         item {
             GlassCard {
-                Text("Configuración de análisis", style = MaterialTheme.typography.titleMedium)
+                Text("Parámetros del modelo", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Jurisdiccion.entries.forEach { jur ->
@@ -408,7 +433,7 @@ fun EstimacionesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Cantidad destacados: ${state.config.topCount}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Números destacados: ${state.config.topCount}", style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(3, 5).forEach { cnt ->
                             FilterChip(
@@ -434,7 +459,6 @@ fun EstimacionesScreen(
             }
         }
 
-        // Calendario real y modo del día (Domingo / Feriado / Lun-Sáb)
         if (est != null) {
             item {
                 GlassCard(highlightBorder = true) {
@@ -444,15 +468,11 @@ fun EstimacionesScreen(
                         color = if (est.esDomingo || est.esFeriado) CyanNeon else MaterialTheme.colorScheme.primary
                     )
                     Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = est.subtituloCalendario,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(est.subtituloCalendario, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (est.esDomingo) {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(6.dp))
                         Text(
-                            text = "Hoy es domingo: no se emiten predicciones de sorteo diario. Usá estos números solo como planificación semanal.",
+                            text = "Hoy es domingo: no hay sorteos oficiales. Usá estas referencias solo como planificación semanal.",
                             style = MaterialTheme.typography.labelMedium,
                             color = PendingAmber
                         )
@@ -460,7 +480,15 @@ fun EstimacionesScreen(
                 }
             }
 
-            // Números destacados con confianza y botón copiar
+            item {
+                QuantScienceSummaryCard(
+                    walkForwardPct = est.efectividadWalkForwardPct,
+                    entropyBits = est.entropiaShannonBits,
+                    chiSqTerminations = est.chiCuadradoTerminaciones,
+                    totalSorteos = est.totalSorteos
+                )
+            }
+
             item {
                 GlassCard {
                     Row(
@@ -468,10 +496,7 @@ fun EstimacionesScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Números destacados (${est.jurisdiccion.label})",
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Text("Candidatos Top (${est.jurisdiccion.label})", style = MaterialTheme.typography.titleMedium)
                         OutlinedButton(
                             onClick = {
                                 val text = est.candidatos.joinToString(", ") { it.numero }
@@ -489,22 +514,37 @@ fun EstimacionesScreen(
 
                     Spacer(Modifier.height(12.dp))
                     if (est.candidatos.isEmpty()) {
-                        Text("Cargando historial estadístico...", style = MaterialTheme.typography.bodyMedium)
+                        Text("Calculando modelo cuantitativo...", style = MaterialTheme.typography.bodyMedium)
                     } else {
                         est.candidatos.forEach { cand ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
+                                    .padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 GoldNumberPill(number = cand.numero)
-                                Spacer(Modifier.width(12.dp))
+                                Spacer(Modifier.width(14.dp))
                                 Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (cand.significado.isNotEmpty()) cand.significado else "Número ${cand.numero}",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "${cand.puntajeCuantitativo}/100 pts",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = GoldBright
+                                        )
+                                    }
                                     Text(
-                                        text = "Confianza ${cand.confianza} · Atraso: ${cand.atrasoSorteos} sorteos",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium
+                                        text = "Confianza ${cand.confianza} · Supervivencia ${String.format(Locale.US, "%.0f%%", cand.tasaSupervivenciaPct)} · Atraso ${cand.atrasoSorteos}",
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
                                         text = cand.resumen,
@@ -514,8 +554,8 @@ fun EstimacionesScreen(
                                     if (cand.rachaCaliente || cand.cruceCoincidente) {
                                         Text(
                                             text = listOfNotNull(
-                                                if (cand.rachaCaliente) "Racha reciente" else null,
-                                                if (cand.cruceCoincidente) "Cruce Prov↔Ciu" else null
+                                                if (cand.rachaCaliente) "EWMA Momentum +" else null,
+                                                if (cand.cruceCoincidente) "Eco Prov↔Ciu" else null
                                             ).joinToString(" · "),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = CyanNeon
@@ -528,7 +568,6 @@ fun EstimacionesScreen(
                 }
             }
 
-            // Gráfico de evolución + Números fríos + Cruce opuesto
             if (est.evolucionTop.size >= 2) {
                 item {
                     GlassCard {
@@ -545,7 +584,7 @@ fun EstimacionesScreen(
                 if (isTablet && opp != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Box(modifier = Modifier.weight(1f)) {
-                            ColdAndCrossCard(est.numerosFrios.map { "${it.numero} (${it.atrasoSorteos}d)" })
+                            ColdAndCrossCard(est.numerosFrios.map { "${it.numero} (${String.format(Locale.US, "%+.1fσ", it.zScoreAtraso)})" })
                         }
                         Box(modifier = Modifier.weight(1f)) {
                             OppositePreviewCard(opp.jurisdiccion.label, opp.candidatos.map { it.numero })
@@ -553,7 +592,7 @@ fun EstimacionesScreen(
                     }
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ColdAndCrossCard(est.numerosFrios.map { "${it.numero} (${it.atrasoSorteos} sort.)" })
+                        ColdAndCrossCard(est.numerosFrios.map { "${it.numero} (${String.format(Locale.US, "%+.1fσ", it.zScoreAtraso)})" })
                         if (opp != null) {
                             OppositePreviewCard(opp.jurisdiccion.label, opp.candidatos.map { it.numero })
                         }
@@ -570,14 +609,11 @@ fun EstimacionesScreen(
 @Composable
 private fun ColdAndCrossCard(coldLabels: List<String>) {
     GlassCard {
-        Text("Números fríos (mayor atraso)", style = MaterialTheme.typography.titleMedium)
+        Text("Números fríos (mayor Z-Score de atraso)", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             coldLabels.forEach { lbl ->
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
+                Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
                     Text(lbl, style = NumericCellStyle, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
                 }
             }
@@ -588,7 +624,7 @@ private fun ColdAndCrossCard(coldLabels: List<String>) {
 @Composable
 private fun OppositePreviewCard(label: String, picks: List<String>) {
     GlassCard {
-        Text("Cruce rápido · $label", style = MaterialTheme.typography.titleMedium)
+        Text("Cruce cuantitativo · $label", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
         Text(
             text = picks.joinToString("  ·  ").ifEmpty { "Calculando..." },
@@ -623,10 +659,15 @@ fun HistorialScreen(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
             Text("Historial Auto-Actualizable (${state.allDraws.size} sorteos)", style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = "Cada sorteo nuevo de Provincia y Ciudad se guarda automáticamente al verificarse.",
+                style = MaterialTheme.typography.labelMedium,
+                color = VerifiedGreen
+            )
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = query,
@@ -640,19 +681,9 @@ fun HistorialScreen(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = filterJur == null,
-                    onClick = { filterJur = null },
-                    label = { Text("Ambas") },
-                    modifier = Modifier.heightIn(min = 48.dp)
-                )
+                FilterChip(selected = filterJur == null, onClick = { filterJur = null }, label = { Text("Ambas") }, modifier = Modifier.heightIn(min = 48.dp))
                 Jurisdiccion.entries.forEach { j ->
-                    FilterChip(
-                        selected = filterJur == j,
-                        onClick = { filterJur = j },
-                        label = { Text(j.label) },
-                        modifier = Modifier.heightIn(min = 48.dp)
-                    )
+                    FilterChip(selected = filterJur == j, onClick = { filterJur = j }, label = { Text(j.label) }, modifier = Modifier.heightIn(min = 48.dp))
                 }
                 TurnoSorteo.entries.forEach { t ->
                     FilterChip(
@@ -692,7 +723,6 @@ fun HistorialScreen(
                     VerificationBadge(draw.estado)
                 }
                 Spacer(Modifier.height(10.dp))
-                // Los 20 números completos en 4 filas x 5 columnas
                 draw.numeros.chunked(5).forEachIndexed { rIdx, rowNums ->
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         rowNums.forEachIndexed { cIdx, n ->
@@ -700,6 +730,8 @@ fun HistorialScreen(
                             Text(
                                 text = String.format(Locale.US, "%02d:%s", pos, n),
                                 style = NumericCellStyle,
+                                maxLines = 1,
+                                softWrap = false,
                                 color = if (pos == 1) GoldBright else MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -710,7 +742,6 @@ fun HistorialScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun QuinielaPlusScreen(
     state: MainUiState,
@@ -719,6 +750,9 @@ fun QuinielaPlusScreen(
     var seed by remember { mutableStateOf(0) }
     var boletasTxt by remember { mutableStateOf("1") }
     val eval = state.plusEvaluacion
+    val suggestedSet = remember(state.estadistica) {
+        state.estadistica?.candidatos?.map { it.numero }?.toSet().orEmpty()
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -727,6 +761,7 @@ fun QuinielaPlusScreen(
     ) {
         item {
             Text("Quiniela Plus · Provincia", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(4.dp))
             Text(
                 "Regla oficial: 8 números distintos (00–99) junto a la Nocturna de Provincia (Lun–Sáb). Cubre Plus, Súper Plus y Chance Plus.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -753,23 +788,39 @@ fun QuinielaPlusScreen(
                         Text("Sugerir c/Motor")
                     }
                 }
-                Spacer(Modifier.height(10.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    state.plusNumbers.forEach { n ->
-                        GoldNumberPill(
-                            number = n,
-                            modifier = Modifier.clickable { viewModel.togglePlusNumber(n) }
-                        )
+                Spacer(Modifier.height(12.dp))
+
+                // Grilla 2x4 con tamaño y márgenes 100% uniformes para los 8 casilleros
+                val slots = List(8) { idx -> state.plusNumbers.getOrNull(idx) }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    slots.chunked(4).forEach { rowSlots ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            rowSlots.forEach { num ->
+                                UniformPlusSlot(
+                                    number = num,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { if (num != null) viewModel.togglePlusNumber(num) }
+                                )
+                            }
+                        }
                     }
                 }
-                Spacer(Modifier.height(10.dp))
+
+                Spacer(Modifier.height(12.dp))
                 Text(
                     text = eval.motivo,
                     style = MaterialTheme.typography.labelMedium,
                     color = if (eval.esValida) VerifiedGreen else AlertRed
                 )
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     OutlinedTextField(
                         value = boletasTxt,
                         onValueChange = {
@@ -778,9 +829,10 @@ fun QuinielaPlusScreen(
                         },
                         label = { Text("Boletas") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
                         modifier = Modifier.width(110.dp)
                     )
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("Costo estimado", style = MaterialTheme.typography.labelMedium)
                         Text(
                             text = String.format(Locale.US, "$ %,.0f ARS", eval.costoArs),
@@ -791,7 +843,7 @@ fun QuinielaPlusScreen(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Control último extracto Nocturna Provincia: ${eval.premioTier} (Plus ${eval.aciertosPlus}/8 · Súper ${eval.aciertosSuperPlus}/8 · Chance ${eval.aciertosChancePlus}/8)",
+                    text = "Control última Nocturna Provincia: ${eval.premioTier} (Plus ${eval.aciertosPlus}/8 · Súper ${eval.aciertosSuperPlus}/8 · Chance ${eval.aciertosChancePlus}/8)",
                     style = MaterialTheme.typography.labelMedium,
                     color = CyanNeon
                 )
@@ -800,26 +852,29 @@ fun QuinielaPlusScreen(
 
         item {
             GlassCard {
-                Text("Selector rápido 00–99", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                for (row in 0 until 10) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        for (col in 0 until 10) {
-                            val num = String.format(Locale.US, "%02d", row * 10 + col)
-                            val selected = num in state.plusNumbers
-                            Box(
-                                modifier = Modifier
-                                    .padding(2.dp)
-                                    .size(30.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(if (selected) GoldBright else MaterialTheme.colorScheme.surfaceVariant)
-                                    .clickable { viewModel.togglePlusNumber(num) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = num,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (selected) Color(0xFF141100) else MaterialTheme.colorScheme.onSurface
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Selector uniforme 00–99", style = MaterialTheme.typography.titleMedium)
+                    Text("Cian = Top Motor", style = MaterialTheme.typography.labelMedium, color = CyanNeon)
+                }
+                Spacer(Modifier.height(10.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (row in 0 until 10) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            for (col in 0 until 10) {
+                                val num = String.format(Locale.US, "%02d", row * 10 + col)
+                                UniformSelectorCell(
+                                    number = num,
+                                    selected = num in state.plusNumbers,
+                                    isSuggested = num in suggestedSet,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { viewModel.togglePlusNumber(num) }
                                 )
                             }
                         }
@@ -829,6 +884,147 @@ fun QuinielaPlusScreen(
         }
 
         item { ResponsibleGamingFooter() }
+    }
+}
+
+@Composable
+fun SignificadosScreen(
+    state: MainUiState,
+    viewModel: QuinielaViewModel,
+    isTablet: Boolean,
+    onNavigateToTab: (AppTab) -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("Todos") }
+    var activeItem by remember { mutableStateOf<NumeroConStats?>(null) }
+
+    val categorias = listOf("Todos", "Tradición", "Animales", "Personas", "Naturaleza", "Objetos", "Cotidiano", "Suerte")
+
+    val filtered = remember(state.significadosConStats, searchQuery, selectedCategory) {
+        val q = searchQuery.trim().lowercase()
+        state.significadosConStats.filter { item ->
+            val matchCat = selectedCategory == "Todos" || item.significado.categoria == selectedCategory
+            val matchQ = q.isEmpty() ||
+                item.significado.numero.contains(q) ||
+                item.significado.significado.lowercase().contains(q) ||
+                item.significado.detalle.lowercase().contains(q)
+            matchCat && matchQ
+        }
+    }
+
+    val columns = if (isTablet) 3 else 2
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Text("Números y Significados (00–99)", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Text(
+                "Tabla tradicional de los sueños con estadísticas reales de ${state.selectedJurisdiccion.label}.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Buscar número (ej. 48) o sueño (ej. agua, perro)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                categorias.forEach { cat ->
+                    FilterChip(
+                        selected = selectedCategory == cat,
+                        onClick = { selectedCategory = cat },
+                        label = { Text(cat) },
+                        modifier = Modifier.heightIn(min = 48.dp)
+                    )
+                }
+            }
+        }
+
+        items(filtered.chunked(columns)) { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                rowItems.forEach { item ->
+                    GlassCard(
+                        highlightBorder = item.enTopMotor,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { activeItem = item }
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            GoldNumberPill(number = item.significado.numero)
+                            if (item.enTopMotor) {
+                                Text("TOP", style = MaterialTheme.typography.labelMedium, color = CyanNeon, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(item.significado.significado, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                        Text(item.significado.categoria, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Salidas: ${item.apariciones} · Atraso: ${item.atrasoSorteos}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                repeat(columns - rowItems.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+
+    activeItem?.let { detail ->
+        AlertDialog(
+            onDismissRequest = { activeItem = null },
+            title = {
+                Text("${detail.significado.numero} · ${detail.significado.significado}", color = GoldBright)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Categoría: ${detail.significado.categoria}", style = MaterialTheme.typography.labelMedium, color = CyanNeon)
+                    Text(detail.significado.detalle, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Historial (${state.selectedJurisdiccion.label}): ${detail.apariciones} apariciones totales · Atraso actual: ${detail.atrasoSorteos} sorteos · Última vez: ${detail.ultimaFecha}.",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.togglePlusNumber(detail.significado.numero)
+                        activeItem = null
+                        onNavigateToTab(AppTab.PLUS)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GoldBright, contentColor = Color(0xFF141100))
+                ) {
+                    Text("Sumar a Q. Plus")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { activeItem = null }) {
+                    Text("Cerrar")
+                }
+            }
+        )
     }
 }
 
@@ -877,12 +1073,7 @@ fun MisJugadasScreen(
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Jurisdiccion.entries.forEach { j ->
-                        FilterChip(
-                            selected = jur == j,
-                            onClick = { jur = j },
-                            label = { Text(j.label) },
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        )
+                        FilterChip(selected = jur == j, onClick = { jur = j }, label = { Text(j.label) }, modifier = Modifier.heightIn(min = 48.dp))
                     }
                 }
                 Row(
@@ -890,12 +1081,7 @@ fun MisJugadasScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TurnoSorteo.entries.forEach { t ->
-                        FilterChip(
-                            selected = turno == t,
-                            onClick = { turno = t },
-                            label = { Text(t.label) },
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        )
+                        FilterChip(selected = turno == t, onClick = { turno = t }, label = { Text(t.label) }, modifier = Modifier.heightIn(min = 48.dp))
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -948,10 +1134,7 @@ fun MisJugadasScreen(
                             color = if (ticket.aciertos.isNotEmpty()) VerifiedGreen else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(
-                        onClick = { viewModel.deleteTicket(ticket.id) },
-                        modifier = Modifier.size(48.dp)
-                    ) {
+                    IconButton(onClick = { viewModel.deleteTicket(ticket.id) }, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Outlined.Delete, contentDescription = "Eliminar boleta")
                     }
                 }
@@ -982,9 +1165,7 @@ fun FuentesYAjustesScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item {
-            Text("Estado de Fuentes y Ajustes", style = MaterialTheme.typography.titleLarge)
-        }
+        item { Text("Estado de Fuentes y Ajustes", style = MaterialTheme.typography.titleLarge) }
 
         item {
             GlassCard {
@@ -1074,17 +1255,13 @@ fun FuentesYAjustesScreen(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
-                        onClick = {
-                            viewModel.updateConfig { it.copy(morningHour = if (it.morningHour == 9) 8 else 9) }
-                        },
+                        onClick = { viewModel.updateConfig { it.copy(morningHour = if (it.morningHour == 9) 8 else 9) } },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     ) {
                         Text("Mañana: ${state.config.morningHour}:00")
                     }
                     OutlinedButton(
-                        onClick = {
-                            viewModel.updateConfig { it.copy(nightHour = if (it.nightHour == 23) 22 else 23) }
-                        },
+                        onClick = { viewModel.updateConfig { it.copy(nightHour = if (it.nightHour == 23) 22 else 23) } },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     ) {
                         Text("Noche: ${state.config.nightHour}:00")
@@ -1125,21 +1302,13 @@ fun FuentesYAjustesScreen(
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
-                        onClick = {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://saberjugar.gob.ar/")))
-                        },
+                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://saberjugar.gob.ar/"))) },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Text("Saber Jugar")
-                    }
+                    ) { Text("Saber Jugar") }
                     OutlinedButton(
-                        onClick = {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.loteria.gba.gov.ar/")))
-                        },
+                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.loteria.gba.gov.ar/"))) },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Text("Lotería PBA")
-                    }
+                    ) { Text("Lotería PBA") }
                 }
             }
         }
