@@ -612,9 +612,9 @@ fun HistorialScreen(
             .asSequence()
             .filter { filterJur == null || it.loteria == filterJur }
             .filter { filterTurno == null || it.turno == filterTurno }
-            .filter { q ->
+            .filter { drawItem ->
                 val clean = query.trim()
-                clean.isEmpty() || it.fechaIso.contains(clean) || it.numeros.any { n -> n.contains(clean) }
+                clean.isEmpty() || drawItem.fechaIso.contains(clean) || drawItem.numeros.any { n -> n.contains(clean) }
             }
             .take(120)
             .toList()
