@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -90,6 +91,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -109,7 +111,10 @@ import com.quinielazero.app.core.model.VentanaAnalisis
 import com.quinielazero.app.ui.MainUiState
 import com.quinielazero.app.ui.QuinielaViewModel
 import com.quinielazero.app.ui.components.EvolutionChart
+import com.quinielazero.app.ui.components.DrawNumberCircle
 import com.quinielazero.app.ui.components.GlassCard
+import com.quinielazero.app.ui.components.LuckyBannerCard
+import com.quinielazero.app.ui.components.TicketBallBadge
 import com.quinielazero.app.ui.components.GoldNumberPill
 import com.quinielazero.app.ui.components.ResponsibleGamingFooter
 import com.quinielazero.app.ui.components.TempNumberBadge
@@ -121,7 +126,6 @@ import com.quinielazero.app.ui.theme.CyanNeon
 import com.quinielazero.app.ui.theme.GoldBright
 import com.quinielazero.app.ui.theme.HotCoral
 import com.quinielazero.app.ui.theme.IvoryBg
-import com.quinielazero.app.ui.theme.NumericCellStyle
 import com.quinielazero.app.ui.theme.NumericDisplayStyle
 import com.quinielazero.app.ui.theme.ObsidianBg
 import com.quinielazero.app.ui.theme.PendingAmber
@@ -198,8 +202,8 @@ fun QuinielaZeroRoot(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        if (isDarkActive) Color(0xFF07080D).copy(alpha = 0.28f)
-                        else IvoryBg.copy(alpha = 0.90f)
+                        if (isDarkActive) Color(0xFF03100A).copy(alpha = 0.18f)
+                        else IvoryBg.copy(alpha = 0.78f)
                     )
             )
 
@@ -215,7 +219,7 @@ fun QuinielaZeroRoot(
                                 Image(
                                     painter = painterResource(id = R.drawable.logo_clover_circuit),
                                     contentDescription = "Logo Quiniela-Zero",
-                                    modifier = Modifier.padding(top = 12.dp).size(44.dp)
+                                    modifier = Modifier.padding(top = 12.dp).size(46.dp).clip(CircleShape)
                                 )
                             }
                         ) {
@@ -340,6 +344,15 @@ private fun CinematicSplashOverlay() {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize().scale(scale).alpha(alpha)
         )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Transparent, Color(0xFF020C07).copy(alpha = 0.88f))
+                    )
+                )
+        )
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -401,7 +414,7 @@ fun EstimacionesScreen(
                     Image(
                         painter = painterResource(id = R.drawable.logo_clover_circuit),
                         contentDescription = "Emblema Quiniela-Zero",
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(48.dp).clip(CircleShape)
                     )
                     Spacer(Modifier.width(12.dp))
                     Column {
@@ -423,6 +436,14 @@ fun EstimacionesScreen(
             }
         }
 
+        item {
+            LuckyBannerCard(
+                drawableRes = R.drawable.banner_lucky_leprechaun,
+                title = "Suerte y Estadística",
+                subtitle = "Tréboles y duendes de la fortuna · Provincia & Ciudad",
+                badgeText = "PRO MAX"
+            )
+        }
         if (state.isSyncing) {
             item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primary) }
         }
@@ -708,6 +729,14 @@ fun HistorialScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
+            LuckyBannerCard(
+                drawableRes = R.drawable.banner_dreams_clover,
+                title = "Historial Oficial",
+                subtitle = "${state.allDraws.size} sorteos guardados de Provincia y Ciudad",
+                height = 112.dp
+            )
+        }
+        item {
             Text("Historial (${state.allDraws.size} sorteos)", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
@@ -766,17 +795,20 @@ fun HistorialScreen(
                     VerificationBadge(draw.estado)
                 }
                 Spacer(Modifier.height(10.dp))
-                draw.numeros.chunked(5).forEachIndexed { rIdx, rowNums ->
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        rowNums.forEachIndexed { cIdx, n ->
-                            val pos = rIdx * 5 + cIdx + 1
-                            Text(
-                                text = String.format(Locale.US, "%02d:%s", pos, n),
-                                style = NumericCellStyle,
-                                maxLines = 1,
-                                softWrap = false,
-                                color = if (pos == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    draw.numeros.chunked(4).forEachIndexed { rIdx, rowNums ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            rowNums.forEachIndexed { cIdx, n ->
+                                val pos = rIdx * 4 + cIdx + 1
+                                DrawNumberCircle(
+                                    position = pos,
+                                    number = n,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
@@ -803,12 +835,12 @@ fun QuinielaPlusScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text("Quiniela Plus · Provincia", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Regla oficial: 8 números distintos (00–99) junto a la Nocturna de Provincia (Lun–Sáb). Cubre Plus, Súper Plus y Chance Plus.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            LuckyBannerCard(
+                drawableRes = R.drawable.banner_lucky_leprechaun,
+                title = "Quiniela Plus · Provincia",
+                subtitle = "8 números distintos (00–99) · Plus, Súper Plus y Chance Plus",
+                badgeText = "BOLETA",
+                height = 118.dp
             )
         }
 
@@ -963,11 +995,12 @@ fun SignificadosScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text("Números y Significados (00–99)", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-            Text(
-                "Tabla tradicional de los sueños con estadísticas reales de ${state.selectedJurisdiccion.label}.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            LuckyBannerCard(
+                drawableRes = R.drawable.banner_dreams_clover,
+                title = "Números y Sueños (00–99)",
+                subtitle = "Tabla tradicional con estadísticas de ${state.selectedJurisdiccion.label}",
+                badgeText = "SUEÑOS",
+                height = 118.dp
             )
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
@@ -1012,7 +1045,7 @@ fun SignificadosScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            GoldNumberPill(number = item.significado.numero)
+                            GoldNumberPill(number = item.significado.numero, size = 52.dp)
                             if (item.enTopMotor) {
                                 Text("TOP", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
                             }
@@ -1098,7 +1131,16 @@ fun MisJugadasScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text("Mis Jugadas (Almacén Cifrado)", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+            LuckyBannerCard(
+                drawableRes = R.drawable.banner_dreams_clover,
+                title = "Mis Jugadas",
+                subtitle = "Boletas cifradas y control automático contra extractos",
+                badgeText = "BOLETAS",
+                height = 114.dp
+            )
+        }
+        item {
+            Text("Presupuesto y registro", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.height(8.dp))
             GlassCard {
                 Text(
@@ -1172,7 +1214,20 @@ fun MisJugadasScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("${ticket.jurisdiccion.label} · ${ticket.turno.label} (${ticket.fechaIso})", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                        Text("Jugados: ${ticket.numeros.joinToString(", ")} · $ ${ticket.montoArs.toInt()} ARS", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Apostado: $ ${ticket.montoArs.toInt()} ARS", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            ticket.numeros.forEach { num ->
+                                TicketBallBadge(
+                                    number = num,
+                                    isHit = ticket.aciertos.any { hit -> hit == num || hit.endsWith(num) }
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
                         val estadoTxt = when {
                             !ticket.controlado -> "Esperando extracto oficial para comparar"
                             ticket.aciertos.isEmpty() -> "Sin aciertos registrados en el extracto"
@@ -1214,7 +1269,14 @@ fun FuentesYAjustesScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item { Text("Estado de Fuentes y Ajustes", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground) }
+        item {
+            LuckyBannerCard(
+                drawableRes = R.drawable.banner_lucky_leprechaun,
+                title = "Fuentes y Ajustes",
+                subtitle = "Tema automático/oscuro, feriados y notificaciones ART",
+                height = 112.dp
+            )
+        }
 
         item {
             GlassCard {

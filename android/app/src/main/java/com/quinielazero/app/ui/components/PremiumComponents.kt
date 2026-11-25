@@ -1,7 +1,9 @@
 package com.quinielazero.app.ui.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,10 +14,12 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -32,23 +36,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quinielazero.app.core.model.EstadoVerificacion
 import com.quinielazero.app.core.model.PuntoEvolucion
 import com.quinielazero.app.ui.theme.AlertRed
 import com.quinielazero.app.ui.theme.AmberWarm
-import com.quinielazero.app.ui.theme.CyanNeon
+import com.quinielazero.app.ui.theme.EmeraldDeep
+import com.quinielazero.app.ui.theme.EmeraldNeon
 import com.quinielazero.app.ui.theme.GoldBright
+import com.quinielazero.app.ui.theme.GoldLightSpecular
+import com.quinielazero.app.ui.theme.GoldRichDeep
 import com.quinielazero.app.ui.theme.HotCoral
 import com.quinielazero.app.ui.theme.JetBrainsMonoFamily
 import com.quinielazero.app.ui.theme.PendingAmber
 import com.quinielazero.app.ui.theme.VerifiedGreen
-import com.quinielazero.app.ui.theme.VioletNeon
 
 @Composable
 fun GlassCard(
@@ -57,12 +66,12 @@ fun GlassCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val borderBrush = if (highlightBorder) {
-        Brush.linearGradient(listOf(GoldBright.copy(alpha = 0.8f), CyanNeon.copy(alpha = 0.55f)))
+        Brush.linearGradient(listOf(GoldBright.copy(alpha = 0.88f), EmeraldNeon.copy(alpha = 0.72f)))
     } else {
         Brush.linearGradient(
             listOf(
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.85f),
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.90f),
+                GoldBright.copy(alpha = 0.28f)
             )
         )
     }
@@ -70,11 +79,11 @@ fun GlassCard(
     val onSurf = MaterialTheme.colorScheme.onSurface
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
         contentColor = onSurf,
-        border = BorderStroke(1.dp, borderBrush),
-        tonalElevation = 4.dp
+        border = BorderStroke(1.2.dp, borderBrush),
+        tonalElevation = 6.dp
     ) {
         CompositionLocalProvider(LocalContentColor provides onSurf) {
             Column(
@@ -86,19 +95,121 @@ fun GlassCard(
 }
 
 @Composable
+fun LuckyBannerCard(
+    @DrawableRes drawableRes: Int,
+    title: String,
+    subtitle: String,
+    badgeText: String? = null,
+    height: Dp = 132.dp,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height),
+        shape = RoundedCornerShape(22.dp),
+        color = Color(0xFF051810),
+        contentColor = Color.White,
+        border = BorderStroke(
+            1.3.dp,
+            Brush.linearGradient(listOf(GoldBright.copy(alpha = 0.85f), EmeraldNeon.copy(alpha = 0.7f)))
+        ),
+        tonalElevation = 6.dp
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(id = drawableRes),
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFF03110B).copy(alpha = 0.90f),
+                                Color(0xFF04160E).copy(alpha = 0.56f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth(0.62f)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                if (badgeText != null) {
+                    Surface(
+                        shape = CircleShape,
+                        color = GoldBright.copy(alpha = 0.22f),
+                        contentColor = GoldBright,
+                        border = BorderStroke(1.dp, GoldBright.copy(alpha = 0.6f))
+                    ) {
+                        Text(
+                            text = badgeText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = GoldBright,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color(0xFFD4ECE0),
+                    maxLines = 2
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun GoldNumberPill(
     number: String,
+    size: Dp = 60.dp,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
-            .width(70.dp)
-            .height(50.dp)
-            .clip(RoundedCornerShape(13.dp))
-            .background(Brush.linearGradient(listOf(GoldBright, AmberWarm)))
+            .size(size)
+            .clip(CircleShape)
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(GoldLightSpecular, GoldBright, GoldRichDeep),
+                    center = Offset(30f, 24f),
+                    radius = 120f
+                )
+            )
+            .border(
+                width = 2.dp,
+                brush = Brush.linearGradient(listOf(GoldLightSpecular, AmberWarm)),
+                shape = CircleShape
+            )
             .semantics { contentDescription = "Número destacado $number" },
         contentAlignment = Alignment.Center
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(3.dp)
+                .border(1.dp, Color(0xFF704200).copy(alpha = 0.35f), CircleShape)
+        )
         Text(
             text = number,
             fontFamily = JetBrainsMonoFamily,
@@ -120,35 +231,50 @@ fun TempNumberBadge(
     modifier: Modifier = Modifier
 ) {
     val accent = if (isHot) HotCoral else MaterialTheme.colorScheme.secondary
-    val bg = if (isHot) HotCoral.copy(alpha = 0.16f) else MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f)
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = bg,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.6f))
+    val orbBrush = if (isHot) {
+        Brush.radialGradient(
+            colors = listOf(Color(0xFFFFB199), HotCoral, Color(0xFF9E2B0E)),
+            center = Offset(24f, 20f),
+            radius = 90f
+        )
+    } else {
+        Brush.radialGradient(
+            colors = listOf(Color(0xFFA7FFE0), EmeraldNeon, Color(0xFF0A6641)),
+            center = Offset(24f, 20f),
+            radius = 90f
+        )
+    }
+    Column(
+        modifier = modifier.padding(vertical = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(orbBrush)
+                .border(1.5.dp, accent.copy(alpha = 0.9f), CircleShape),
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = number,
                 fontFamily = JetBrainsMonoFamily,
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = accent,
-                maxLines = 1,
-                softWrap = false
-            )
-            Text(
-                text = subLabel,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 17.sp,
+                color = Color(0xFF0A120E),
                 maxLines = 1,
                 softWrap = false
             )
         }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = subLabel,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false
+        )
     }
 }
 
@@ -160,32 +286,45 @@ fun UniformPlusSlot(
 ) {
     val filled = number != null
     Box(
-        modifier = modifier
-            .height(54.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .then(
-                if (filled) {
-                    Modifier.background(Brush.linearGradient(listOf(GoldBright, AmberWarm)))
-                } else {
-                    Modifier
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
-                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(14.dp))
-                }
-            )
-            .clickable(enabled = filled, onClick = onClick)
-            .semantics { contentDescription = if (filled) "Quiniela Plus número $number" else "Casillero vacío" },
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = number ?: "--",
-            fontFamily = JetBrainsMonoFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 21.sp,
-            maxLines = 1,
-            softWrap = false,
-            textAlign = TextAlign.Center,
-            color = if (filled) Color(0xFF141100) else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Box(
+            modifier = Modifier
+                .size(58.dp)
+                .clip(CircleShape)
+                .then(
+                    if (filled) {
+                        Modifier
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(GoldLightSpecular, GoldBright, GoldRichDeep),
+                                    center = Offset(26f, 22f),
+                                    radius = 110f
+                                )
+                            )
+                            .border(2.dp, GoldLightSpecular, CircleShape)
+                    } else {
+                        Modifier
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f))
+                            .border(1.4.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.85f), CircleShape)
+                    }
+                )
+                .clickable(enabled = filled, onClick = onClick)
+                .semantics { contentDescription = if (filled) "Quiniela Plus número $number" else "Casillero vacío" },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = number ?: "--",
+                fontFamily = JetBrainsMonoFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                maxLines = 1,
+                softWrap = false,
+                textAlign = TextAlign.Center,
+                color = if (filled) Color(0xFF141100) else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -197,23 +336,28 @@ fun UniformSelectorCell(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val bgColor = when {
-        selected -> GoldBright
-        isSuggested -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-    }
     val borderColor = when {
-        selected -> AmberWarm
-        isSuggested -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f)
-        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        selected -> GoldLightSpecular
+        isSuggested -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.65f)
     }
 
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .clip(CircleShape)
+            .then(
+                when {
+                    selected -> Modifier.background(
+                        Brush.radialGradient(
+                            colors = listOf(GoldLightSpecular, GoldBright, GoldRichDeep)
+                        )
+                    )
+                    isSuggested -> Modifier.background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.22f))
+                    else -> Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.86f))
+                }
+            )
+            .border(if (selected || isSuggested) 1.5.dp else 1.dp, borderColor, CircleShape)
             .clickable(onClick = onClick)
             .semantics { contentDescription = "Seleccionar número $number" },
         contentAlignment = Alignment.Center
@@ -222,7 +366,7 @@ fun UniformSelectorCell(
             text = number,
             fontFamily = JetBrainsMonoFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             maxLines = 1,
             softWrap = false,
             textAlign = TextAlign.Center,
@@ -236,6 +380,106 @@ fun UniformSelectorCell(
 }
 
 @Composable
+fun DrawNumberCircle(
+    position: Int,
+    number: String,
+    modifier: Modifier = Modifier
+) {
+    val isHead = position == 1
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .then(
+                    if (isHead) {
+                        Modifier
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(GoldLightSpecular, GoldBright, GoldRichDeep),
+                                    center = Offset(24f, 20f),
+                                    radius = 100f
+                                )
+                            )
+                            .border(1.8.dp, GoldLightSpecular, CircleShape)
+                    } else {
+                        Modifier
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f))
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.75f), CircleShape)
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "${position}°",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isHead) Color(0xFF3E2900) else MaterialTheme.colorScheme.secondary,
+                    lineHeight = 10.sp,
+                    maxLines = 1
+                )
+                Text(
+                    text = number,
+                    fontFamily = JetBrainsMonoFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = if (isHead) Color(0xFF141100) else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TicketBallBadge(
+    number: String,
+    isHit: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(46.dp)
+            .clip(CircleShape)
+            .then(
+                if (isHit) {
+                    Modifier
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(Color(0xFFA7FFE0), EmeraldNeon, Color(0xFF0A6641))
+                            )
+                        )
+                        .border(1.5.dp, Color.White.copy(alpha = 0.8f), CircleShape)
+                } else {
+                    Modifier
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(GoldLightSpecular.copy(alpha = 0.35f), EmeraldDeep)
+                            )
+                        )
+                        .border(1.2.dp, GoldBright.copy(alpha = 0.75f), CircleShape)
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = number,
+            fontFamily = JetBrainsMonoFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = if (number.length >= 4) 12.sp else 15.sp,
+            color = if (isHit) Color(0xFF031A0F) else Color.White,
+            maxLines = 1,
+            softWrap = false
+        )
+    }
+}
+
+@Composable
 fun VerificationBadge(estado: EstadoVerificacion) {
     val (color, text) = when (estado) {
         EstadoVerificacion.VERIFICADO -> VerifiedGreen to "VERIFICADO"
@@ -244,16 +488,16 @@ fun VerificationBadge(estado: EstadoVerificacion) {
         EstadoVerificacion.HISTORIAL -> MaterialTheme.colorScheme.secondary to "HISTORIAL"
     }
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = CircleShape,
         color = color.copy(alpha = 0.16f),
         contentColor = color,
-        border = BorderStroke(1.dp, color.copy(alpha = 0.55f))
+        border = BorderStroke(1.dp, color.copy(alpha = 0.65f))
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
             color = color,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
 }
@@ -320,12 +564,12 @@ fun EvolutionChart(
             }
             drawPath(
                 path = path,
-                brush = Brush.horizontalGradient(listOf(VioletNeon, accentColor, lineColor)),
+                brush = Brush.horizontalGradient(listOf(EmeraldNeon, accentColor, lineColor)),
                 style = Stroke(width = 5f, cap = StrokeCap.Round)
             )
             coords.forEach { pt ->
                 drawCircle(color = lineColor, radius = 6f, center = pt)
-                drawCircle(color = Color(0xFF0A0A0F), radius = 2.5f, center = pt)
+                drawCircle(color = Color(0xFF04100B), radius = 2.5f, center = pt)
             }
         }
 
@@ -348,7 +592,7 @@ fun EvolutionChart(
 fun ResponsibleGamingFooter() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f),
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
