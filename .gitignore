@@ -3,3 +3,8 @@ __pycache__/
 *.log
 .env
 output.txt
+.pytest_cache/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties

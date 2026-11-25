@@ -1,0 +1,62 @@
+name: Build Quiniela-Zero Android APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android_apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Ejecutar Tests Unitarios Kotlin (Android JVM)
+        working-directory: android
+        run: gradle testDebugUnitTest --no-daemon
+
+      - name: Compilar APK Instalable (Debug Universal)
+        working-directory: android
+        run: gradle assembleDebug --no-daemon
+
+      - name: Renombrar APK para distribución
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk Quiniela-Zero-ProMax.apk
+
+      - name: Subir artefacto APK a GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: Quiniela-Zero-ProMax-APK
+          path: Quiniela-Zero-ProMax.apk
+          retention-days: 90
+
+      - name: Publicar APK en GitHub Release (descarga directa 1 clic)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0-promax
+          name: Quiniela-Zero Pro Max (APK Android)
+          body: |
+            Compilación automática verificada de **Quiniela-Zero Pro Max**.
+            - Incluye historial completo precargado de Provincia (2025–2026) y Ciudad (2024–2026) + sincronización automática continua.
+            - Descargá `Quiniela-Zero-ProMax.apk`, habilitá "Orígenes desconocidos" en Android y tocá el archivo para instalar.
+          files: Quiniela-Zero-ProMax.apk

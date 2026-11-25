@@ -1,13 +1,17 @@
-name: Bot Quiniela
+name: Bot Quiniela Auto-Sync
 
 on:
   schedule:
-    # Lunes a Sábado en ART (UTC-3): Previa 10:35, Primera 12:20, Matutina 15:20, Vespertina 18:20, Nocturna 21:25
+    # Lunes a Sábado en ART (UTC-3):
+    # Previa 10:35 ART (13:35 UTC), Primera 12:20 ART (15:20 UTC),
+    # Matutina 15:20 ART (18:20 UTC), Vespertina 18:20 ART (21:20 UTC),
+    # Nocturna 21:25 ART (00:25 UTC siguiente día -> dom,mar,mie,jue,vie,sab)
     - cron: "35 13 * * 1-6"
     - cron: "20 15 * * 1-6"
     - cron: "20 18 * * 1-6"
     - cron: "20 21 * * 1-6"
     - cron: "25 0 * * 0,2,3,4,5,6"
+    - cron: "55 0 * * 0,2,3,4,5,6"
   workflow_dispatch:
 
 permissions:
@@ -28,28 +32,31 @@ jobs:
           cache: pip
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt pytest
 
-      - name: Correr scraper
+      - name: Ejecutar pruebas unitarias Python
+        run: pytest -q
+
+      - name: Correr scraper y validación cruzada
         id: run
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python quiniela_pro.py 2>&1 | tee output.txt
+          python quiniela_pro.py --once 2>&1 | tee output.txt
           if grep -q "CAMBIOS=1" output.txt; then
             echo "cambios=1" >> $GITHUB_OUTPUT
           else
             echo "cambios=0" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit del DB y Reporte
+      - name: Commit de DB, CSVs históricos y Snapshot Móvil
         run: |
           git config user.name "quiniela-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add quiniela_pro.db resultados.txt fallos_consecutivos.txt
+          git add quiniela_pro.db provincia_completo.csv ciudad_completo.csv sync_snapshot.json resultados.txt fallos_consecutivos.txt
           if ! git diff --staged --quiet; then
-            git commit -m "data: actualización $(date -u +%Y-%m-%dT%H:%M)"
+            git commit -m "data: actualización automática Provincia y Ciudad $(date -u +%Y-%m-%dT%H:%M)"
             git push
           else
             echo "Sin cambios para commitear."
