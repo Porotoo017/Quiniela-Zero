@@ -16,19 +16,20 @@ import com.quinielazero.app.R
 import com.quinielazero.app.core.model.ThemeMode
 
 val ObsidianBg = Color(0xFF0A0A0F)
-val ObsidianSurface = Color(0xFF131520)
-val ObsidianSurfaceAlt = Color(0xFF1B1F30)
-val ObsidianBorder = Color(0xFF2B314A)
+val ObsidianSurface = Color(0xFF151826)
+val ObsidianSurfaceAlt = Color(0xFF1E2336)
+val ObsidianBorder = Color(0xFF333B59)
 
 val GoldBright = Color(0xFFFFD700)
 val AmberWarm = Color(0xFFFFA500)
+val HotCoral = Color(0xFFFF6B3D)
 val CyanNeon = Color(0xFF00E5FF)
 val VioletNeon = Color(0xFF8A2BE2)
 
 val IvoryBg = Color(0xFFF7F6F2)
 val IvorySurface = Color(0xFFFFFFFF)
-val IvoryBorder = Color(0xFFE2DED2)
-val GoldDeepLight = Color(0xFF9C6900)
+val IvoryBorder = Color(0xFFD6D0C0)
+val GoldDeepLight = Color(0xFF8F5F00)
 
 val VerifiedGreen = Color(0xFF22C55E)
 val PendingAmber = Color(0xFFF59E0B)
@@ -52,26 +53,26 @@ private val DarkColors = darkColorScheme(
     onSecondary = Color(0xFF001A1F),
     tertiary = VioletNeon,
     background = ObsidianBg,
-    onBackground = Color(0xFFF4F6FB),
+    onBackground = Color(0xFFFFFFFF),
     surface = ObsidianSurface,
-    onSurface = Color(0xFFF4F6FB),
+    onSurface = Color(0xFFFFFFFF),
     surfaceVariant = ObsidianSurfaceAlt,
-    onSurfaceVariant = Color(0xFF9BA3B8),
+    onSurfaceVariant = Color(0xFFC8D0E4),
     outline = ObsidianBorder
 )
 
 private val LightColors = lightColorScheme(
     primary = GoldDeepLight,
     onPrimary = Color.White,
-    secondary = Color(0xFF007A8C),
+    secondary = Color(0xFF006B7A),
     onSecondary = Color.White,
     tertiary = Color(0xFF6A1B9A),
     background = IvoryBg,
-    onBackground = Color(0xFF161822),
+    onBackground = Color(0xFF11131A),
     surface = IvorySurface,
-    onSurface = Color(0xFF161822),
-    surfaceVariant = Color(0xFFECE9DF),
-    onSurfaceVariant = Color(0xFF555B6E),
+    onSurface = Color(0xFF11131A),
+    surfaceVariant = Color(0xFFEBE6D8),
+    onSurfaceVariant = Color(0xFF454B5E),
     outline = IvoryBorder
 )
 

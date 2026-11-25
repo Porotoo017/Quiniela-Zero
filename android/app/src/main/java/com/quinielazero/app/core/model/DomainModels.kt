@@ -121,6 +121,7 @@ data class ResultadoEstadistico(
     val subtituloCalendario: String,
     val candidatos: List<CandidatoEstadistico>,
     val evolucionTop: List<PuntoEvolucion>,
+    val numerosCalientes: List<CandidatoEstadistico>,
     val numerosFrios: List<CandidatoEstadistico>,
     val efectividadWalkForwardPct: Double,
     val entropiaShannonBits: Double,

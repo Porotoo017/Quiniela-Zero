@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,11 +44,11 @@ import com.quinielazero.app.ui.theme.AlertRed
 import com.quinielazero.app.ui.theme.AmberWarm
 import com.quinielazero.app.ui.theme.CyanNeon
 import com.quinielazero.app.ui.theme.GoldBright
+import com.quinielazero.app.ui.theme.HotCoral
 import com.quinielazero.app.ui.theme.JetBrainsMonoFamily
 import com.quinielazero.app.ui.theme.PendingAmber
 import com.quinielazero.app.ui.theme.VerifiedGreen
 import com.quinielazero.app.ui.theme.VioletNeon
-import java.util.Locale
 
 @Composable
 fun GlassCard(
@@ -55,27 +57,31 @@ fun GlassCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val borderBrush = if (highlightBorder) {
-        Brush.linearGradient(listOf(GoldBright.copy(alpha = 0.78f), CyanNeon.copy(alpha = 0.55f)))
+        Brush.linearGradient(listOf(GoldBright.copy(alpha = 0.8f), CyanNeon.copy(alpha = 0.55f)))
     } else {
         Brush.linearGradient(
             listOf(
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.78f),
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.85f),
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
             )
         )
     }
 
+    val onSurf = MaterialTheme.colorScheme.onSurface
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+        contentColor = onSurf,
         border = BorderStroke(1.dp, borderBrush),
         tonalElevation = 4.dp
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            content = content
-        )
+        CompositionLocalProvider(LocalContentColor provides onSurf) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                content = content
+            )
+        }
     }
 }
 
@@ -107,6 +113,46 @@ fun GoldNumberPill(
 }
 
 @Composable
+fun TempNumberBadge(
+    number: String,
+    subLabel: String,
+    isHot: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val accent = if (isHot) HotCoral else MaterialTheme.colorScheme.secondary
+    val bg = if (isHot) HotCoral.copy(alpha = 0.16f) else MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f)
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = bg,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.6f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = number,
+                fontFamily = JetBrainsMonoFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = accent,
+                maxLines = 1,
+                softWrap = false
+            )
+            Text(
+                text = subLabel,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                softWrap = false
+            )
+        }
+    }
+}
+
+@Composable
 fun UniformPlusSlot(
     number: String?,
     modifier: Modifier = Modifier,
@@ -122,7 +168,7 @@ fun UniformPlusSlot(
                     Modifier.background(Brush.linearGradient(listOf(GoldBright, AmberWarm)))
                 } else {
                     Modifier
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
                         .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(14.dp))
                 }
             )
@@ -153,13 +199,13 @@ fun UniformSelectorCell(
 ) {
     val bgColor = when {
         selected -> GoldBright
-        isSuggested -> CyanNeon.copy(alpha = 0.16f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+        isSuggested -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
+        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
     }
     val borderColor = when {
         selected -> AmberWarm
-        isSuggested -> CyanNeon.copy(alpha = 0.7f)
-        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+        isSuggested -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f)
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
     }
 
     Box(
@@ -182,87 +228,10 @@ fun UniformSelectorCell(
             textAlign = TextAlign.Center,
             color = when {
                 selected -> Color(0xFF141100)
-                isSuggested -> CyanNeon
+                isSuggested -> MaterialTheme.colorScheme.secondary
                 else -> MaterialTheme.colorScheme.onSurface
             }
         )
-    }
-}
-
-@Composable
-fun QuantScienceSummaryCard(
-    walkForwardPct: Double,
-    entropyBits: Double,
-    chiSqTerminations: Double,
-    totalSorteos: Int
-) {
-    GlassCard {
-        Text("Laboratorio Matemático · Variables Activas", style = MaterialTheme.typography.titleMedium, color = CyanNeon)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "Ensamble multi-factor: Z-Score Binomial + EWMA (λ=0.08/0.012) + Supervivencia Weibull + Markov Lift + Cruce Prov↔Ciu + Balance Chi².",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(10.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MetricTile(
-                title = "Backtest 30d",
-                value = String.format(Locale.US, "%.1f%%", walkForwardPct),
-                accent = VerifiedGreen,
-                modifier = Modifier.weight(1f)
-            )
-            MetricTile(
-                title = "Entropía H",
-                value = String.format(Locale.US, "%.2f b", entropyBits),
-                accent = GoldBright,
-                modifier = Modifier.weight(1f)
-            )
-            MetricTile(
-                title = "Chi² Term.",
-                value = String.format(Locale.US, "%.1f", chiSqTerminations),
-                accent = CyanNeon,
-                modifier = Modifier.weight(1f)
-            )
-            MetricTile(
-                title = "Muestra",
-                value = "$totalSorteos",
-                accent = AmberWarm,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun MetricTile(
-    title: String,
-    value: String,
-    accent: Color,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = value,
-                fontFamily = JetBrainsMonoFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = accent,
-                maxLines = 1,
-                softWrap = false
-            )
-        }
     }
 }
 
@@ -272,12 +241,13 @@ fun VerificationBadge(estado: EstadoVerificacion) {
         EstadoVerificacion.VERIFICADO -> VerifiedGreen to "VERIFICADO"
         EstadoVerificacion.NO_VERIFICADO -> PendingAmber to "NO VERIFICADO"
         EstadoVerificacion.PENDIENTE -> AlertRed to "PENDIENTE"
-        EstadoVerificacion.HISTORIAL -> CyanNeon to "HISTORIAL"
+        EstadoVerificacion.HISTORIAL -> MaterialTheme.colorScheme.secondary to "HISTORIAL"
     }
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = color.copy(alpha = 0.14f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.5f))
+        color = color.copy(alpha = 0.16f),
+        contentColor = color,
+        border = BorderStroke(1.dp, color.copy(alpha = 0.55f))
     ) {
         Text(
             text = text,
@@ -296,8 +266,8 @@ fun EvolutionChart(
 ) {
     if (points.size < 2) return
     val lineColor = GoldBright
-    val accentColor = CyanNeon
-    val gridColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+    val accentColor = MaterialTheme.colorScheme.secondary
+    val gridColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)
 
     Column(
         modifier = modifier
@@ -379,8 +349,9 @@ fun ResponsibleGamingFooter() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f),
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
     ) {
         Text(
             text = "Las probabilidades mostradas son estimaciones estadísticas. Jugar implica riesgo. Jugá responsablemente (+18). Ayuda LOTBA: 0800-666-6006 · PBA: 0800-444-4000.",

@@ -20,20 +20,19 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 /**
- * Motor Cuantitativo Multi-Variable Pro Max:
- *  1) Z-Score Binomial / Poisson frente a la esperanza matemática (p0 = 0.20 apariciones/sorteo)
- *  2) EWMA Multi-Horizonte (corto λ=0.08 vs largo λ=0.012 -> momento de tendencia)
- *  3) Análisis de Supervivencia / Hazard-Rate de atraso (Z_atraso = (g - Ḡ) / σ_G)
- *  4) Cadenas de Markov de 1º y 2º orden (Lift / PMI condicionado a las últimas cabezas)
- *  5) Cruce Inter-Jurisdiccional Provincia <-> Ciudad (eco y correlación cruzada)
- *  6) Equilibrio Chi-Cuadrado de terminaciones (0-9) + Entropía de Shannon
- *  7) Backtesting Walk-Forward real fuera de muestra sobre los últimos 30 sorteos
+ * Motor Cuantitativo Multi-Variable Pro Max (silencioso en segundo plano):
+ *  - Z-Score Binomial / Poisson frente a la esperanza matemática
+ *  - EWMA Multi-Horizonte (corto λ=0.08 vs largo λ=0.012)
+ *  - Supervivencia / Hazard-Rate de atraso (Z_atraso)
+ *  - Markov Lift condicionado a la última cabeza
+ *  - Cruce Provincia <-> Ciudad + Balance Chi² de terminaciones
  */
 class StatisticalEngine(
     private val calendarProvider: SorteoCalendarProvider
 ) {
     private data class ScoredSet(
         val candidates: List<CandidatoEstadistico>,
+        val hotNumbers: List<CandidatoEstadistico>,
         val coldNumbers: List<CandidatoEstadistico>,
         val entropyBits: Double,
         val chiSqTerminations: Double
@@ -83,6 +82,7 @@ class StatisticalEngine(
                 subtituloCalendario = dayStatus.summaryLabel,
                 candidatos = emptyList(),
                 evolucionTop = emptyList(),
+                numerosCalientes = emptyList(),
                 numerosFrios = emptyList(),
                 efectividadWalkForwardPct = 0.0,
                 entropiaShannonBits = 0.0,
@@ -99,7 +99,6 @@ class StatisticalEngine(
             includeCrossJurisdiction = includeCrossJurisdiction
         )
 
-        // Backtesting Walk-Forward real fuera de muestra sobre los últimos min(30, total-20) sorteos
         val evalWindow = min(30, (totalSorteos - 20).coerceAtLeast(0))
         val walkForwardPct = if (evalWindow >= 5) {
             var hits = 0
@@ -142,8 +141,8 @@ class StatisticalEngine(
 
         val tituloModo = when {
             dayStatus.isSunday -> "Sugerencia de jugadas para la semana"
-            dayStatus.isHoliday -> "Feriado · Sugerencia preventiva"
-            else -> "Estimación Cuantitativa Pro Max"
+            dayStatus.isHoliday -> "Modo Feriado · Planificación"
+            else -> "Números recomendados"
         }
 
         ResultadoEstadistico(
@@ -157,6 +156,7 @@ class StatisticalEngine(
             subtituloCalendario = dayStatus.summaryLabel,
             candidatos = scored.candidates,
             evolucionTop = evolution,
+            numerosCalientes = scored.hotNumbers,
             numerosFrios = scored.coldNumbers,
             efectividadWalkForwardPct = walkForwardPct,
             entropiaShannonBits = scored.entropyBits,
@@ -182,7 +182,6 @@ class StatisticalEngine(
         val recentStreakCount = IntArray(100)
         val terminationRecent = IntArray(10)
 
-        // Matriz de transiciones de Markov (última cabeza -> números del siguiente sorteo)
         val markovFromHead = Array(100) { IntArray(100) }
         val headTotals = IntArray(100)
 
@@ -230,7 +229,6 @@ class StatisticalEngine(
             if (currentHead in 0..99) prevHead = currentHead
         }
 
-        // Cruce inter-jurisdiccional Provincia <-> Ciudad
         val oppositeEcho = DoubleArray(100)
         if (includeCrossJurisdiction && oppositeDraws.isNotEmpty()) {
             val recentOpp = oppositeDraws.takeLast(25)
@@ -246,7 +244,6 @@ class StatisticalEngine(
             }
         }
 
-        // Entropía de Shannon de frecuencias sobre 100 números (máximo teórico log2(100) ≈ 6.6439 bits)
         val totalSlotObs = (n * 20).coerceAtLeast(1)
         var entropy = 0.0
         for (i in 0..99) {
@@ -254,7 +251,6 @@ class StatisticalEngine(
             if (p > 0.0) entropy -= p * (ln(p) / ln(2.0))
         }
 
-        // Chi-cuadrado de terminaciones recientes (0-9) para balance de dígitos terminales
         val sumTerm = terminationRecent.sum().coerceAtLeast(1).toDouble()
         val expTerm = sumTerm / 10.0
         var chiSqTerm = 0.0
@@ -266,29 +262,24 @@ class StatisticalEngine(
         val lastHead = lastDraw.numeros.firstOrNull()?.takeLast(2)?.toIntOrNull() ?: -1
         val lastDrawSet = lastDraw.numeros.mapNotNull { it.takeLast(2).toIntOrNull() }.toSet()
 
-        // Esperanza matemática por sorteo: 20 extracciones independientes de 00..99 => E[apariciones] = n * 0.20
         val expectedSlots = n * 0.20
         val stdSlots = sqrt(max(1.0, n * 20.0 * 0.01 * 0.99))
 
         val maxHeadWeighted = headWeighted.maxOrNull()?.takeIf { it > 0.0 } ?: 1.0
+        val maxEwmaShort = ewmaShort.maxOrNull()?.takeIf { it > 0.0 } ?: 1.0
+        val maxEwmaLong = ewmaLong.maxOrNull()?.takeIf { it > 0.0 } ?: 1.0
         val maxOpp = oppositeEcho.maxOrNull()?.takeIf { it > 0.0 } ?: 1.0
 
-        val rawScored = (0..99).mapNotNull { num ->
-            if (avoidImmediateRepeat && num in lastDrawSet) return@mapNotNull null
-
+        val allAnalyzed = (0..99).map { num ->
             val appearances = freqSlots[num]
             val drawCount = freqDraws[num]
             val freqRel = appearances.toDouble() / totalSlotObs.toDouble()
-
-            // 1. Z-score de frecuencia
             val zFreq = (appearances - expectedSlots) / stdSlots
 
-            // 2. EWMA Momentum (corto vs largo normalizado)
-            val ewmaNormShort = ewmaShort[num] / max(ewmaShort.maxOrNull() ?: 1.0, 1e-6)
-            val ewmaNormLong = ewmaLong[num] / max(ewmaLong.maxOrNull() ?: 1.0, 1e-6)
+            val ewmaNormShort = ewmaShort[num] / maxEwmaShort
+            val ewmaNormLong = ewmaLong[num] / maxEwmaLong
             val ewmaMomentum = ewmaNormShort - ewmaNormLong
 
-            // 3. Análisis de Supervivencia / Atraso (Z_atraso y tasa de peligro empírica)
             val historyIdx = seenIndices[num]
             val lastSeen = historyIdx.lastOrNull() ?: -1
             val currentGap = (n - 1) - lastSeen
@@ -303,7 +294,6 @@ class StatisticalEngine(
             val zGap = (currentGap - meanGap) / stdGap
             val survivalDue = (gaps.count { it <= currentGap }.toDouble() / gaps.size.toDouble()) * 100.0
 
-            // 4. Markov Lift condicionado a la última cabeza
             val pBaseDraw = (drawCount.toDouble() + 1.0) / (n.toDouble() + 5.0)
             val markovLift = if (lastHead in 0..99 && headTotals[lastHead] >= 5) {
                 val pCond = (markovFromHead[lastHead][num].toDouble() + 0.5) / (headTotals[lastHead].toDouble() + 2.5)
@@ -312,10 +302,8 @@ class StatisticalEngine(
                 1.0
             }
 
-            // 5. Déficit de terminación (equilibrio dígito terminal)
             val termDeficit = ((expTerm - terminationRecent[num % 10]) / max(expTerm, 1.0)).coerceIn(-1.0, 1.0)
 
-            // 6. Score Compuesto Multi-Variable
             val fFreq = (headWeighted[num] / maxHeadWeighted)
             val fMomentum = ((ewmaMomentum + 0.5) / 1.0).coerceIn(0.0, 1.0)
             val fSurvival = (survivalDue / 100.0) * 0.6 + ((zGap + 1.5) / 4.0).coerceIn(0.0, 1.0) * 0.4
@@ -361,19 +349,32 @@ class StatisticalEngine(
                 significado = meaning,
                 resumen = String.format(
                     Locale.US,
-                    "Basado en %d sorteos · Frec %.1f%% (±%.2f%%) · Z-Atraso %+.1fσ · Lift %.2fx",
+                    "Basado en %d sorteos · Frecuencia %.1f%% (±%.2f%%)",
                     n,
                     freqPct,
-                    errPct,
-                    zGap,
-                    markovLift
+                    errPct
                 )
             )
         }
 
+        val candidatesPool = if (avoidImmediateRepeat) {
+            allAnalyzed.filterNot { (it.numero.toIntOrNull() ?: -1) in lastDrawSet }
+        } else {
+            allAnalyzed
+        }
+
+        val hotNumbers = allAnalyzed
+            .sortedWith(compareByDescending<CandidatoEstadistico> { it.ewmaMomentum }.thenByDescending { it.frecuenciaPct })
+            .take(5)
+
+        val coldNumbers = allAnalyzed
+            .sortedWith(compareByDescending<CandidatoEstadistico> { it.atrasoSorteos }.thenByDescending { it.zScoreAtraso })
+            .take(5)
+
         return ScoredSet(
-            candidates = rawScored.sortedByDescending { it.score }.take(topCount),
-            coldNumbers = rawScored.sortedByDescending { it.zScoreAtraso }.take(5),
+            candidates = candidatesPool.sortedByDescending { it.score }.take(topCount),
+            hotNumbers = hotNumbers,
+            coldNumbers = coldNumbers,
             entropyBits = entropy,
             chiSqTerminations = chiSqTerm
         )

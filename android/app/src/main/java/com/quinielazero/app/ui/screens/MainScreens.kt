@@ -24,8 +24,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -61,13 +59,17 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -76,6 +78,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -108,14 +111,15 @@ import com.quinielazero.app.ui.QuinielaViewModel
 import com.quinielazero.app.ui.components.EvolutionChart
 import com.quinielazero.app.ui.components.GlassCard
 import com.quinielazero.app.ui.components.GoldNumberPill
-import com.quinielazero.app.ui.components.QuantScienceSummaryCard
 import com.quinielazero.app.ui.components.ResponsibleGamingFooter
+import com.quinielazero.app.ui.components.TempNumberBadge
 import com.quinielazero.app.ui.components.UniformPlusSlot
 import com.quinielazero.app.ui.components.UniformSelectorCell
 import com.quinielazero.app.ui.components.VerificationBadge
 import com.quinielazero.app.ui.theme.AlertRed
 import com.quinielazero.app.ui.theme.CyanNeon
 import com.quinielazero.app.ui.theme.GoldBright
+import com.quinielazero.app.ui.theme.HotCoral
 import com.quinielazero.app.ui.theme.IvoryBg
 import com.quinielazero.app.ui.theme.NumericCellStyle
 import com.quinielazero.app.ui.theme.NumericDisplayStyle
@@ -136,6 +140,25 @@ enum class AppTab(val label: String, val icon: ImageVector) {
 }
 
 @Composable
+private fun appChipColors() = FilterChipDefaults.filterChipColors(
+    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+    labelColor = MaterialTheme.colorScheme.onSurface,
+    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+    selectedLabelColor = MaterialTheme.colorScheme.primary
+)
+
+@Composable
+private fun appTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+    cursorColor = MaterialTheme.colorScheme.primary
+)
+
+@Composable
 fun QuinielaZeroRoot(
     state: MainUiState,
     viewModel: QuinielaViewModel,
@@ -152,7 +175,7 @@ fun QuinielaZeroRoot(
     }
 
     LaunchedEffect(Unit) {
-        delay(1350)
+        delay(1300)
         showSplash = false
     }
 
@@ -163,56 +186,113 @@ fun QuinielaZeroRoot(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Fondo temático acorde a la app en toda la aplicación
-        Image(
-            painter = painterResource(id = R.drawable.app_wallpaper_bg),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    if (isDarkActive) Color(0xFF07080D).copy(alpha = 0.25f)
-                    else IvoryBg.copy(alpha = 0.88f)
-                )
-        )
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(id = R.drawable.app_wallpaper_bg),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        if (isDarkActive) Color(0xFF07080D).copy(alpha = 0.28f)
+                        else IvoryBg.copy(alpha = 0.90f)
+                    )
+            )
 
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val isTablet = maxWidth >= 600.dp
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val isTablet = maxWidth >= 600.dp
 
-            if (isTablet) {
-                Row(modifier = Modifier.fillMaxSize()) {
-                    NavigationRail(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                        header = {
-                            Image(
-                                painter = painterResource(id = R.drawable.logo_clover_circuit),
-                                contentDescription = "Logo Quiniela-Zero",
-                                modifier = Modifier.padding(top = 12.dp).size(44.dp)
-                            )
+                if (isTablet) {
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        NavigationRail(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            header = {
+                                Image(
+                                    painter = painterResource(id = R.drawable.logo_clover_circuit),
+                                    contentDescription = "Logo Quiniela-Zero",
+                                    modifier = Modifier.padding(top = 12.dp).size(44.dp)
+                                )
+                            }
+                        ) {
+                            AppTab.entries.forEach { tab ->
+                                NavigationRailItem(
+                                    selected = currentTab == tab,
+                                    onClick = { currentTab = tab },
+                                    icon = { Icon(tab.icon, contentDescription = tab.label) },
+                                    label = { Text(tab.label, maxLines = 1, softWrap = false) },
+                                    colors = NavigationRailItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                                    )
+                                )
+                            }
                         }
-                    ) {
-                        AppTab.entries.forEach { tab ->
-                            NavigationRailItem(
-                                selected = currentTab == tab,
-                                onClick = { currentTab = tab },
-                                icon = { Icon(tab.icon, contentDescription = tab.label) },
-                                label = { Text(tab.label, maxLines = 1, softWrap = false) }
+                        Scaffold(
+                            snackbarHost = { SnackbarHost(snackbarHostState) },
+                            containerColor = Color.Transparent,
+                            contentColor = MaterialTheme.colorScheme.onBackground
+                        ) { pad ->
+                            TabContent(
+                                tab = currentTab,
+                                state = state,
+                                viewModel = viewModel,
+                                isTablet = true,
+                                snackbarHostState = snackbarHostState,
+                                onRequestNotificationPermission = onRequestNotificationPermission,
+                                onNavigateToTab = { currentTab = it },
+                                modifier = Modifier.padding(pad)
                             )
                         }
                     }
+                } else {
                     Scaffold(
                         snackbarHost = { SnackbarHost(snackbarHostState) },
-                        containerColor = Color.Transparent
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onBackground,
+                        bottomBar = {
+                            NavigationBar(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                                tonalElevation = 8.dp
+                            ) {
+                                AppTab.entries.forEach { tab ->
+                                    NavigationBarItem(
+                                        selected = currentTab == tab,
+                                        onClick = { currentTab = tab },
+                                        icon = { Icon(tab.icon, contentDescription = tab.label) },
+                                        label = {
+                                            Text(
+                                                text = tab.label,
+                                                fontSize = 10.sp,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     ) { pad ->
                         TabContent(
                             tab = currentTab,
                             state = state,
                             viewModel = viewModel,
-                            isTablet = true,
+                            isTablet = false,
                             snackbarHostState = snackbarHostState,
                             onRequestNotificationPermission = onRequestNotificationPermission,
                             onNavigateToTab = { currentTab = it },
@@ -220,53 +300,15 @@ fun QuinielaZeroRoot(
                         )
                     }
                 }
-            } else {
-                Scaffold(
-                    snackbarHost = { SnackbarHost(snackbarHostState) },
-                    containerColor = Color.Transparent,
-                    bottomBar = {
-                        NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                            tonalElevation = 8.dp
-                        ) {
-                            AppTab.entries.forEach { tab ->
-                                NavigationBarItem(
-                                    selected = currentTab == tab,
-                                    onClick = { currentTab = tab },
-                                    icon = { Icon(tab.icon, contentDescription = tab.label) },
-                                    label = {
-                                        Text(
-                                            text = tab.label,
-                                            fontSize = 10.sp,
-                                            maxLines = 1,
-                                            softWrap = false
-                                        )
-                                    }
-                                )
-                            }
-                        }
-                    }
-                ) { pad ->
-                    TabContent(
-                        tab = currentTab,
-                        state = state,
-                        viewModel = viewModel,
-                        isTablet = false,
-                        snackbarHostState = snackbarHostState,
-                        onRequestNotificationPermission = onRequestNotificationPermission,
-                        onNavigateToTab = { currentTab = it },
-                        modifier = Modifier.padding(pad)
-                    )
-                }
             }
-        }
 
-        AnimatedVisibility(
-            visible = showSplash,
-            enter = fadeIn(),
-            exit = fadeOut(animationSpec = tween(450))
-        ) {
-            CinematicSplashOverlay()
+            AnimatedVisibility(
+                visible = showSplash,
+                enter = fadeIn(),
+                exit = fadeOut(animationSpec = tween(450))
+            ) {
+                CinematicSplashOverlay()
+            }
         }
     }
 }
@@ -305,7 +347,7 @@ private fun CinematicSplashOverlay() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("QUINIELA-ZERO", style = MaterialTheme.typography.headlineMedium, color = GoldBright)
-            Text("PRO MAX · CIENCIA ESTADÍSTICA", style = MaterialTheme.typography.labelMedium, color = CyanNeon)
+            Text("PRO MAX", style = MaterialTheme.typography.labelMedium, color = CyanNeon)
         }
     }
 }
@@ -363,22 +405,26 @@ fun EstimacionesScreen(
                     )
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text("Quiniela-Zero Pro Max", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                        Text("Quiniela-Zero", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = state.syncStatusBanner.ifEmpty { "Auto-guardado activo · Provincia & Ciudad" },
+                            text = "Provincia & Ciudad",
                             style = MaterialTheme.typography.labelMedium,
-                            color = VerifiedGreen
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
                 IconButton(onClick = { viewModel.refreshFromSources(true) }, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Outlined.Refresh, contentDescription = "Actualizar resultados desde fuentes")
+                    Icon(
+                        Icons.Outlined.Refresh,
+                        contentDescription = "Actualizar resultados",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
         }
 
         if (state.isSyncing) {
-            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = GoldBright) }
+            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primary) }
         }
 
         if (state.offlineMode) {
@@ -386,6 +432,7 @@ fun EstimacionesScreen(
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = PendingAmber.copy(alpha = 0.16f),
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                     border = BorderStroke(1.dp, PendingAmber)
                 ) {
                     Text(
@@ -398,9 +445,31 @@ fun EstimacionesScreen(
             }
         }
 
+        if (est != null && (est.esDomingo || est.esFeriado)) {
+            item {
+                GlassCard(highlightBorder = true) {
+                    Text(
+                        text = if (est.esDomingo) "Domingo · Planificación semanal" else "Modo Feriado activo",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = if (est.esDomingo) {
+                            "Hoy es domingo y no hay sorteos oficiales. Referencias sugeridas para la semana."
+                        } else {
+                            "Sin sorteos oficiales por feriado configurado."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
         item {
             GlassCard {
-                Text("Parámetros del modelo", style = MaterialTheme.typography.titleMedium)
+                Text("Selección de análisis", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Jurisdiccion.entries.forEach { jur ->
@@ -408,7 +477,7 @@ fun EstimacionesScreen(
                             selected = state.selectedJurisdiccion == jur,
                             onClick = { viewModel.selectJurisdiccion(jur) },
                             label = { Text(jur.label) },
-                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
+                            colors = appChipColors(),
                             modifier = Modifier.heightIn(min = 48.dp)
                         )
                     }
@@ -423,6 +492,7 @@ fun EstimacionesScreen(
                             selected = state.selectedVentana == win,
                             onClick = { viewModel.selectVentana(win) },
                             label = { Text(win.label) },
+                            colors = appChipColors(),
                             modifier = Modifier.heightIn(min = 48.dp)
                         )
                     }
@@ -433,13 +503,14 @@ fun EstimacionesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Números destacados: ${state.config.topCount}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Números destacados: ${state.config.topCount}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(3, 5).forEach { cnt ->
                             FilterChip(
                                 selected = state.config.topCount == cnt,
                                 onClick = { viewModel.updateConfig { it.copy(topCount = cnt) } },
                                 label = { Text("Top $cnt") },
+                                colors = appChipColors(),
                                 modifier = Modifier.heightIn(min = 48.dp)
                             )
                         }
@@ -450,7 +521,7 @@ fun EstimacionesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Evitar repetición inmediata", style = MaterialTheme.typography.bodyMedium)
+                    Text("Evitar repetición inmediata", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                     Switch(
                         checked = state.config.avoidImmediateRepeat,
                         onCheckedChange = { checked -> viewModel.updateConfig { it.copy(avoidImmediateRepeat = checked) } }
@@ -462,41 +533,12 @@ fun EstimacionesScreen(
         if (est != null) {
             item {
                 GlassCard(highlightBorder = true) {
-                    Text(
-                        text = est.tituloModo,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (est.esDomingo || est.esFeriado) CyanNeon else MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(est.subtituloCalendario, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (est.esDomingo) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = "Hoy es domingo: no hay sorteos oficiales. Usá estas referencias solo como planificación semanal.",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = PendingAmber
-                        )
-                    }
-                }
-            }
-
-            item {
-                QuantScienceSummaryCard(
-                    walkForwardPct = est.efectividadWalkForwardPct,
-                    entropyBits = est.entropiaShannonBits,
-                    chiSqTerminations = est.chiCuadradoTerminaciones,
-                    totalSorteos = est.totalSorteos
-                )
-            }
-
-            item {
-                GlassCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Candidatos Top (${est.jurisdiccion.label})", style = MaterialTheme.typography.titleMedium)
+                        Text("Números destacados (${est.jurisdiccion.label})", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                         OutlinedButton(
                             onClick = {
                                 val text = est.candidatos.joinToString(", ") { it.numero }
@@ -514,7 +556,7 @@ fun EstimacionesScreen(
 
                     Spacer(Modifier.height(12.dp))
                     if (est.candidatos.isEmpty()) {
-                        Text("Calculando modelo cuantitativo...", style = MaterialTheme.typography.bodyMedium)
+                        Text("Calculando estadísticas...", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         est.candidatos.forEach { cand ->
                             Row(
@@ -526,41 +568,22 @@ fun EstimacionesScreen(
                                 GoldNumberPill(number = cand.numero)
                                 Spacer(Modifier.width(14.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = if (cand.significado.isNotEmpty()) cand.significado else "Número ${cand.numero}",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = "${cand.puntajeCuantitativo}/100 pts",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = GoldBright
-                                        )
-                                    }
                                     Text(
-                                        text = "Confianza ${cand.confianza} · Supervivencia ${String.format(Locale.US, "%.0f%%", cand.tasaSupervivenciaPct)} · Atraso ${cand.atrasoSorteos}",
-                                        style = MaterialTheme.typography.bodyMedium
+                                        text = if (cand.significado.isNotEmpty()) cand.significado else "Número ${cand.numero}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Confianza ${cand.confianza} · Atraso: ${cand.atrasoSorteos} sorteos",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = cand.resumen,
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                    if (cand.rachaCaliente || cand.cruceCoincidente) {
-                                        Text(
-                                            text = listOfNotNull(
-                                                if (cand.rachaCaliente) "EWMA Momentum +" else null,
-                                                if (cand.cruceCoincidente) "Eco Prov↔Ciu" else null
-                                            ).joinToString(" · "),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = CyanNeon
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -568,6 +591,65 @@ fun EstimacionesScreen(
                 }
             }
 
+            // Números Calientes y Fríos lado a lado o apilados con píldoras uniformes
+            if (est.numerosCalientes.isNotEmpty() || est.numerosFrios.isNotEmpty()) {
+            item {
+                val hotCard: @Composable () -> Unit = {
+                    GlassCard {
+                        Text("Números Calientes", style = MaterialTheme.typography.titleMedium, color = HotCoral)
+                        Text("Mayor impulso en los últimos sorteos", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            est.numerosCalientes.forEach { item ->
+                                TempNumberBadge(
+                                    number = item.numero,
+                                    subLabel = "${item.apariciones}x",
+                                    isHot = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                val coldCard: @Composable () -> Unit = {
+                    GlassCard {
+                        Text("Números Fríos", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary)
+                        Text("Mayor cantidad de sorteos sin salir", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            est.numerosFrios.forEach { item ->
+                                TempNumberBadge(
+                                    number = item.numero,
+                                    subLabel = "${item.atrasoSorteos}s",
+                                    isHot = false,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (isTablet) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(Modifier.weight(1f)) { hotCard() }
+                        Box(Modifier.weight(1f)) { coldCard() }
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        hotCard()
+                        coldCard()
+                    }
+                }
+            }
+
+            }
             if (est.evolucionTop.size >= 2) {
                 item {
                     GlassCard {
@@ -579,58 +661,22 @@ fun EstimacionesScreen(
                 }
             }
 
-            item {
-                val opp = state.estadisticaOpuesta
-                if (isTablet && opp != null) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            ColdAndCrossCard(est.numerosFrios.map { "${it.numero} (${String.format(Locale.US, "%+.1fσ", it.zScoreAtraso)})" })
-                        }
-                        Box(modifier = Modifier.weight(1f)) {
-                            OppositePreviewCard(opp.jurisdiccion.label, opp.candidatos.map { it.numero })
-                        }
-                    }
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ColdAndCrossCard(est.numerosFrios.map { "${it.numero} (${String.format(Locale.US, "%+.1fσ", it.zScoreAtraso)})" })
-                        if (opp != null) {
-                            OppositePreviewCard(opp.jurisdiccion.label, opp.candidatos.map { it.numero })
-                        }
+            state.estadisticaOpuesta?.let { opp ->
+                item {
+                    GlassCard {
+                        Text("Cruce rápido · ${opp.jurisdiccion.label}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = opp.candidatos.joinToString("  ·  ") { it.numero }.ifEmpty { "Calculando..." },
+                            style = NumericDisplayStyle,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
                     }
                 }
             }
         }
 
         item { ResponsibleGamingFooter() }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ColdAndCrossCard(coldLabels: List<String>) {
-    GlassCard {
-        Text("Números fríos (mayor Z-Score de atraso)", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(8.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            coldLabels.forEach { lbl ->
-                Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
-                    Text(lbl, style = NumericCellStyle, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun OppositePreviewCard(label: String, picks: List<String>) {
-    GlassCard {
-        Text("Cruce cuantitativo · $label", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = picks.joinToString("  ·  ").ifEmpty { "Calculando..." },
-            style = NumericDisplayStyle,
-            color = CyanNeon
-        )
     }
 }
 
@@ -662,18 +708,14 @@ fun HistorialScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text("Historial Auto-Actualizable (${state.allDraws.size} sorteos)", style = MaterialTheme.typography.titleLarge)
-            Text(
-                text = "Cada sorteo nuevo de Provincia y Ciudad se guarda automáticamente al verificarse.",
-                style = MaterialTheme.typography.labelMedium,
-                color = VerifiedGreen
-            )
+            Text("Historial (${state.allDraws.size} sorteos)", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
                 label = { Text("Buscar fecha (YYYY-MM-DD) o número") },
                 singleLine = true,
+                colors = appTextFieldColors(),
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
@@ -681,15 +723,16 @@ fun HistorialScreen(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(selected = filterJur == null, onClick = { filterJur = null }, label = { Text("Ambas") }, modifier = Modifier.heightIn(min = 48.dp))
+                FilterChip(selected = filterJur == null, onClick = { filterJur = null }, label = { Text("Ambas") }, colors = appChipColors(), modifier = Modifier.heightIn(min = 48.dp))
                 Jurisdiccion.entries.forEach { j ->
-                    FilterChip(selected = filterJur == j, onClick = { filterJur = j }, label = { Text(j.label) }, modifier = Modifier.heightIn(min = 48.dp))
+                    FilterChip(selected = filterJur == j, onClick = { filterJur = j }, label = { Text(j.label) }, colors = appChipColors(), modifier = Modifier.heightIn(min = 48.dp))
                 }
                 TurnoSorteo.entries.forEach { t ->
                     FilterChip(
                         selected = filterTurno == t,
                         onClick = { filterTurno = if (filterTurno == t) null else t },
                         label = { Text(t.label) },
+                        colors = appChipColors(),
                         modifier = Modifier.heightIn(min = 48.dp)
                     )
                 }
@@ -717,7 +760,7 @@ fun HistorialScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("${draw.loteria.label} · ${draw.turno.label}", style = MaterialTheme.typography.titleMedium)
+                        Text("${draw.loteria.label} · ${draw.turno.label}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                         Text(draw.fechaIso, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     VerificationBadge(draw.estado)
@@ -732,7 +775,7 @@ fun HistorialScreen(
                                 style = NumericCellStyle,
                                 maxLines = 1,
                                 softWrap = false,
-                                color = if (pos == 1) GoldBright else MaterialTheme.colorScheme.onSurface
+                                color = if (pos == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -776,7 +819,7 @@ fun QuinielaPlusScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Tu boleta (${state.plusNumbers.size}/8)", style = MaterialTheme.typography.titleMedium)
+                    Text("Tu boleta (${state.plusNumbers.size}/8)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                     Button(
                         onClick = {
                             seed++
@@ -790,7 +833,6 @@ fun QuinielaPlusScreen(
                 }
                 Spacer(Modifier.height(12.dp))
 
-                // Grilla 2x4 con tamaño y márgenes 100% uniformes para los 8 casilleros
                 val slots = List(8) { idx -> state.plusNumbers.getOrNull(idx) }
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     slots.chunked(4).forEach { rowSlots ->
@@ -830,14 +872,15 @@ fun QuinielaPlusScreen(
                         label = { Text("Boletas") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
+                        colors = appTextFieldColors(),
                         modifier = Modifier.width(110.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Costo estimado", style = MaterialTheme.typography.labelMedium)
+                        Text("Costo estimado", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             text = String.format(Locale.US, "$ %,.0f ARS", eval.costoArs),
                             style = NumericDisplayStyle,
-                            color = GoldBright
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -845,7 +888,7 @@ fun QuinielaPlusScreen(
                 Text(
                     text = "Control última Nocturna Provincia: ${eval.premioTier} (Plus ${eval.aciertosPlus}/8 · Súper ${eval.aciertosSuperPlus}/8 · Chance ${eval.aciertosChancePlus}/8)",
                     style = MaterialTheme.typography.labelMedium,
-                    color = CyanNeon
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
         }
@@ -857,8 +900,8 @@ fun QuinielaPlusScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Selector uniforme 00–99", style = MaterialTheme.typography.titleMedium)
-                    Text("Cian = Top Motor", style = MaterialTheme.typography.labelMedium, color = CyanNeon)
+                    Text("Selector uniforme 00–99", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Destacados marcados", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
                 }
                 Spacer(Modifier.height(10.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -932,6 +975,7 @@ fun SignificadosScreen(
                 onValueChange = { searchQuery = it },
                 label = { Text("Buscar número (ej. 48) o sueño (ej. agua, perro)") },
                 singleLine = true,
+                colors = appTextFieldColors(),
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
@@ -944,6 +988,7 @@ fun SignificadosScreen(
                         selected = selectedCategory == cat,
                         onClick = { selectedCategory = cat },
                         label = { Text(cat) },
+                        colors = appChipColors(),
                         modifier = Modifier.heightIn(min = 48.dp)
                     )
                 }
@@ -969,11 +1014,11 @@ fun SignificadosScreen(
                         ) {
                             GoldNumberPill(number = item.significado.numero)
                             if (item.enTopMotor) {
-                                Text("TOP", style = MaterialTheme.typography.labelMedium, color = CyanNeon, fontWeight = FontWeight.Bold)
+                                Text("TOP", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
                             }
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text(item.significado.significado, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                        Text(item.significado.significado, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
                         Text(item.significado.categoria, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(4.dp))
                         Text(
@@ -993,13 +1038,16 @@ fun SignificadosScreen(
     activeItem?.let { detail ->
         AlertDialog(
             onDismissRequest = { activeItem = null },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.primary,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
             title = {
-                Text("${detail.significado.numero} · ${detail.significado.significado}", color = GoldBright)
+                Text("${detail.significado.numero} · ${detail.significado.significado}")
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Categoría: ${detail.significado.categoria}", style = MaterialTheme.typography.labelMedium, color = CyanNeon)
-                    Text(detail.significado.detalle, style = MaterialTheme.typography.bodyMedium)
+                    Text("Categoría: ${detail.significado.categoria}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                    Text(detail.significado.detalle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                     Text(
                         "Historial (${state.selectedJurisdiccion.label}): ${detail.apariciones} apariciones totales · Atraso actual: ${detail.atrasoSorteos} sorteos · Última vez: ${detail.ultimaFecha}.",
                         style = MaterialTheme.typography.labelMedium,
@@ -1050,7 +1098,7 @@ fun MisJugadasScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text("Mis Jugadas (Almacén Cifrado)", style = MaterialTheme.typography.titleLarge)
+            Text("Mis Jugadas (Almacén Cifrado)", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.height(8.dp))
             GlassCard {
                 Text(
@@ -1062,18 +1110,18 @@ fun MisJugadasScreen(
                 LinearProgressIndicator(
                     progress = { limitRatio },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                    color = if (totalHoy > state.config.dailyLimitArs) AlertRed else GoldBright
+                    color = if (totalHoy > state.config.dailyLimitArs) AlertRed else MaterialTheme.colorScheme.primary
                 )
             }
         }
 
         item {
             GlassCard {
-                Text("Registrar boleta física", style = MaterialTheme.typography.titleMedium)
+                Text("Registrar boleta física", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Jurisdiccion.entries.forEach { j ->
-                        FilterChip(selected = jur == j, onClick = { jur = j }, label = { Text(j.label) }, modifier = Modifier.heightIn(min = 48.dp))
+                        FilterChip(selected = jur == j, onClick = { jur = j }, label = { Text(j.label) }, colors = appChipColors(), modifier = Modifier.heightIn(min = 48.dp))
                     }
                 }
                 Row(
@@ -1081,7 +1129,7 @@ fun MisJugadasScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TurnoSorteo.entries.forEach { t ->
-                        FilterChip(selected = turno == t, onClick = { turno = t }, label = { Text(t.label) }, modifier = Modifier.heightIn(min = 48.dp))
+                        FilterChip(selected = turno == t, onClick = { turno = t }, label = { Text(t.label) }, colors = appChipColors(), modifier = Modifier.heightIn(min = 48.dp))
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -1089,6 +1137,7 @@ fun MisJugadasScreen(
                     value = numsInput,
                     onValueChange = { numsInput = it },
                     label = { Text("Números jugados (ej: 14, 32, 4820)") },
+                    colors = appTextFieldColors(),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
@@ -1097,6 +1146,7 @@ fun MisJugadasScreen(
                     onValueChange = { montoInput = it.filter(Char::isDigit) },
                     label = { Text("Monto apostado (ARS)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = appTextFieldColors(),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(10.dp))
@@ -1121,8 +1171,8 @@ fun MisJugadasScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("${ticket.jurisdiccion.label} · ${ticket.turno.label} (${ticket.fechaIso})", style = MaterialTheme.typography.titleMedium)
-                        Text("Jugados: ${ticket.numeros.joinToString(", ")} · $ ${ticket.montoArs.toInt()} ARS", style = MaterialTheme.typography.bodyMedium)
+                        Text("${ticket.jurisdiccion.label} · ${ticket.turno.label} (${ticket.fechaIso})", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Jugados: ${ticket.numeros.joinToString(", ")} · $ ${ticket.montoArs.toInt()} ARS", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                         val estadoTxt = when {
                             !ticket.controlado -> "Esperando extracto oficial para comparar"
                             ticket.aciertos.isEmpty() -> "Sin aciertos registrados en el extracto"
@@ -1135,7 +1185,7 @@ fun MisJugadasScreen(
                         )
                     }
                     IconButton(onClick = { viewModel.deleteTicket(ticket.id) }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Outlined.Delete, contentDescription = "Eliminar boleta")
+                        Icon(Icons.Outlined.Delete, contentDescription = "Eliminar boleta", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -1145,7 +1195,6 @@ fun MisJugadasScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FuentesYAjustesScreen(
     state: MainUiState,
@@ -1165,7 +1214,7 @@ fun FuentesYAjustesScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item { Text("Estado de Fuentes y Ajustes", style = MaterialTheme.typography.titleLarge) }
+        item { Text("Estado de Fuentes y Ajustes", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground) }
 
         item {
             GlassCard {
@@ -1174,14 +1223,14 @@ fun FuentesYAjustesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Estado técnico de fuentes", style = MaterialTheme.typography.titleMedium)
+                    Text("Estado técnico de fuentes", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                     OutlinedButton(onClick = { viewModel.refreshFromSources(true) }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text("Probar ahora")
                     }
                 }
                 Spacer(Modifier.height(8.dp))
                 if (state.fuentesSalud.isEmpty()) {
-                    Text("Sin chequeos registrados todavía.", style = MaterialTheme.typography.bodyMedium)
+                    Text("Sin chequeos registrados todavía.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     state.fuentesSalud.forEach { src ->
                         Row(
@@ -1189,7 +1238,7 @@ fun FuentesYAjustesScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(src.nombre, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                Text(src.nombre, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
                                 Text("${src.jurisdiccion} · ${src.detalle} (${src.latenciaMs}ms)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Text(
@@ -1205,7 +1254,7 @@ fun FuentesYAjustesScreen(
 
         item {
             GlassCard {
-                Text("Apariencia y Calendario", style = MaterialTheme.typography.titleMedium)
+                Text("Apariencia y Calendario", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ThemeMode.entries.forEach { tm ->
@@ -1213,6 +1262,7 @@ fun FuentesYAjustesScreen(
                             selected = state.config.themeMode == tm,
                             onClick = { viewModel.updateConfig { it.copy(themeMode = tm) } },
                             label = { Text(tm.label) },
+                            colors = appChipColors(),
                             modifier = Modifier.heightIn(min = 48.dp)
                         )
                     }
@@ -1224,7 +1274,7 @@ fun FuentesYAjustesScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Modo Feriado (sin sorteos)", style = MaterialTheme.typography.bodyMedium)
+                        Text("Modo Feriado (sin sorteos)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                         Text("Desactiva predicciones de sorteo en días no laborables.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(
@@ -1238,9 +1288,9 @@ fun FuentesYAjustesScreen(
         item {
             GlassCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.NotificationsActive, contentDescription = null, tint = GoldBright)
+                    Icon(Icons.Outlined.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(8.dp))
-                    Text("Notificaciones ART (${state.config.morningHour}:00 y ${state.config.nightHour}:00)", style = MaterialTheme.typography.titleMedium)
+                    Text("Notificaciones ART (${state.config.morningHour}:00 y ${state.config.nightHour}:00)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Spacer(Modifier.height(8.dp))
                 if (!hasNotifPerm) {
@@ -1268,9 +1318,12 @@ fun FuentesYAjustesScreen(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("Silenciar días específicos:", style = MaterialTheme.typography.labelMedium)
+                Text("Silenciar días específicos:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(6.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     diasSemana.forEach { (dow, lbl) ->
                         val muted = dow in state.config.mutedDays
                         FilterChip(
@@ -1283,6 +1336,7 @@ fun FuentesYAjustesScreen(
                                 }
                             },
                             label = { Text(if (muted) "$lbl (Sil.)" else lbl) },
+                            colors = appChipColors(),
                             modifier = Modifier.heightIn(min = 48.dp)
                         )
                     }
@@ -1292,7 +1346,7 @@ fun FuentesYAjustesScreen(
 
         item {
             GlassCard {
-                Text("Juego Responsable y Privacidad", style = MaterialTheme.typography.titleMedium)
+                Text("Juego Responsable y Privacidad", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "Tus boletas y topes se guardan únicamente en tu dispositivo con cifrado AES-256 (Android Keystore). Sin cuentas ni rastreo externo.",

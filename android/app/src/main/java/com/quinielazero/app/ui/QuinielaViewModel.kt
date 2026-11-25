@@ -70,7 +70,7 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
     private val plusBoletasCount = MutableStateFlow(1)
     private val isBootstrapping = MutableStateFlow(true)
     private val isSyncing = MutableStateFlow(false)
-    private val syncBanner = MutableStateFlow("Auto-guardado activo")
+    private val syncBanner = MutableStateFlow("Provincia & Ciudad")
     private val offlineMode = MutableStateFlow(false)
     private val toastMessage = MutableStateFlow<String?>(null)
     private val statResult = MutableStateFlow<ResultadoEstadistico?>(null)
@@ -266,9 +266,9 @@ class QuinielaViewModel(application: Application) : AndroidViewModel(application
             }
             offlineMode.value = report.offlineFallback
             syncBanner.value = if (report.nuevosGuardados > 0) {
-                "Auto-guardado: +${report.nuevosGuardados} sorteos sumados al historial"
+                "Provincia & Ciudad · +${report.nuevosGuardados} nuevos"
             } else {
-                "Auto-guardado al día · Provincia & Ciudad"
+                "Provincia & Ciudad"
             }
             isSyncing.value = false
         }

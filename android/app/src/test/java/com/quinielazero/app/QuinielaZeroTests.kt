@@ -216,6 +216,8 @@ class QuinielaZeroTests {
         assertTrue(res.candidatos.first().puntajeCuantitativo in 1..99)
         assertTrue(res.candidatos.first().markovLift > 0.0)
         assertTrue(res.candidatos.first().significado.isNotEmpty())
+        assertTrue(res.numerosCalientes.isNotEmpty())
+        assertTrue(res.numerosFrios.isNotEmpty())
     }
 }
 
