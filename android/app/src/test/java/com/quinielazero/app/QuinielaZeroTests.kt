@@ -312,10 +312,12 @@ class QuinielaZeroTests {
         assertTrue(emptyRes.combinacionesSugeridas.isEmpty())
         assertTrue(emptyRes.mensajeSinDatos.isNotBlank())
 
-        val draws = (1..36).map { d ->
-            val date = LocalDate.of(2026, 9, 1).plusDays(d.toLong())
-            val safeDate = if (date.dayOfWeek.value == 7) date.plusDays(1) else date
-            val base = (d * 3) % 80
+        val uniqueDates = generateSequence(LocalDate.of(2026, 9, 1)) { it.plusDays(1) }
+            .filter { it.dayOfWeek.value != 7 }
+            .take(36)
+            .toList()
+        val draws = uniqueDates.mapIndexed { d, safeDate ->
+            val base = ((d + 1) * 3) % 80
             val nums2 = (0 until 20).map { k -> ((base + k) % 100).toString().padStart(2, '0') }
             PlusSorteo(
                 fechaIso = safeDate.toString(),
