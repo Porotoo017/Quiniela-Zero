@@ -12,7 +12,17 @@ import com.quinielazero.app.core.model.VentanaAnalisis
 import com.quinielazero.app.core.network.DataParsers
 import com.quinielazero.app.core.network.DataSourcesManager
 import com.quinielazero.app.core.network.ParsedDrawCandidate
+import com.quinielazero.app.core.plus.EstadoJugada
+import com.quinielazero.app.core.plus.ModalidadPlus
+import com.quinielazero.app.core.plus.PlusCsvImportResult
+import com.quinielazero.app.core.plus.PlusJugada
+import com.quinielazero.app.core.plus.PlusPesosMotor
+import com.quinielazero.app.core.plus.PlusReglasPremios
+import com.quinielazero.app.core.plus.PlusSorteo
+import com.quinielazero.app.core.plus.QuinielaPlusAnalyticsEngine
+import com.quinielazero.app.core.plus.QuinielaPlusCsvParser
 import com.quinielazero.app.core.plus.QuinielaPlusEngine
+import com.quinielazero.app.core.plus.VentanaPlus
 import com.quinielazero.app.data.local.FuenteSaludDao
 import com.quinielazero.app.data.local.FuenteSaludEntity
 import com.quinielazero.app.data.local.SorteoDao
@@ -218,6 +228,118 @@ class QuinielaZeroTests {
         assertTrue(res.candidatos.first().significado.isNotEmpty())
         assertTrue(res.numerosCalientes.isNotEmpty())
         assertTrue(res.numerosFrios.isNotEmpty())
+    }
+
+    @Test
+    fun quiniela_plus_csv_parser_auto_asset_flexible_and_mapping() {
+        val assetCsv = buildString {
+            appendLine("fecha,juego,turno," + (1..20).joinToString(",") { "n$it" })
+            appendLine("2026-11-24,PROVINCIA,NOCTURNA," + sample20(1000).joinToString(","))
+            appendLine("2026-11-24,PROVINCIA,MATUTINA," + sample20(2000).joinToString(","))
+            appendLine("2026-11-23,PROVINCIA,NOCTURNA," + sample20(1100).joinToString(","))
+        }
+        val parsed = QuinielaPlusCsvParser.parseAssetCsv(assetCsv, "provincia_completo.csv")
+        assertEquals(2, parsed.size)
+        assertEquals("2026-11-24", parsed.first().fechaIso)
+        assertEquals(20, parsed.first().numerosPlus.size)
+        assertEquals(20, parsed.first().numerosCompletos4.size)
+        assertEquals("00", parsed.first().numerosPlus.first())
+
+        assertEquals("2026-11-24", QuinielaPlusCsvParser.normalizeDateIso("24/11/2026"))
+        assertEquals("2026-11-24", QuinielaPlusCsvParser.normalizeDateIso("24-11-2026"))
+
+        val ambiguousCsv = "colA;colB
+24/11/2026;01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20"
+        val flex = QuinielaPlusCsvParser.parseFlexibleImport(ambiguousCsv, "custom.txt")
+        assertTrue(flex is PlusCsvImportResult.NeedsMapping)
+        val mapping = (flex as PlusCsvImportResult.NeedsMapping).suggestion
+        val resolved = QuinielaPlusCsvParser.parseWithMapping(
+            rawText = mapping.rawContent,
+            fileName = mapping.fileName,
+            delimiter = mapping.delimiter,
+            hasHeader = mapping.hasHeader,
+            dateCol = 0,
+            numberCols = emptyList(),
+            packedCol = 1
+        )
+        assertTrue(resolved is PlusCsvImportResult.Success)
+        assertEquals(1, (resolved as PlusCsvImportResult.Success).sorteos.size)
+    }
+
+    @Test
+    fun quiniela_plus_control_jugadas_evaluation_and_summary() {
+        val sorteo = PlusSorteo(
+            fechaIso = "2026-11-24",
+            numerosPlus = (0 until 20).map { it.toString().padStart(2, '0') },
+            numerosCompletos4 = sample20(1000)
+        )
+        val reglas = PlusReglasPremios()
+
+        val ganadora = QuinielaPlusEngine.evaluarJugada(
+            PlusJugada("1", "2026-11-24", listOf("00", "01", "02", "03", "04", "55", "66", "77"), ModalidadPlus.QUINIELA_PLUS, 1000.0),
+            sorteo,
+            reglas
+        )
+        assertEquals(EstadoJugada.GANO, ganadora.estado)
+        assertEquals(5, ganadora.aciertosExactos.size)
+        assertTrue(ganadora.premioGanado >= 3000.0)
+
+        val pendiente = QuinielaPlusEngine.evaluarJugada(
+            PlusJugada("2", "2026-11-25", listOf("00", "01", "02", "03", "04", "05", "06", "07"), ModalidadPlus.QUINIELA_PLUS, 1000.0),
+            null,
+            reglas
+        )
+        assertEquals(EstadoJugada.PENDIENTE, pendiente.estado)
+
+        val perdedora = QuinielaPlusEngine.evaluarJugada(
+            PlusJugada("3", "2026-11-24", listOf("40", "41", "42", "43", "44", "45", "46", "47"), ModalidadPlus.QUINIELA_PLUS, 500.0),
+            sorteo,
+            reglas.copy(habilitarParcialAproximacion = false, habilitarParcialTerminacion = false)
+        )
+        assertEquals(EstadoJugada.NO_GANO, perdedora.estado)
+
+        val resumen = QuinielaPlusEngine.calcularResumenJugadas(listOf(ganadora, pendiente, perdedora))
+        assertEquals(3, resumen.totalJugadas)
+        assertEquals(2, resumen.jugadasResueltas)
+        assertEquals(1, resumen.jugadasGanadoras)
+        assertEquals(1, resumen.jugadasPendientes)
+        assertEquals(50.0, resumen.porcentajeAcierto, 0.01)
+    }
+
+    @Test
+    fun quiniela_plus_analytics_engine_deterministic_and_empty() {
+        val emptyRes = QuinielaPlusAnalyticsEngine.analyze(emptyList())
+        assertFalse(emptyRes.tieneDatos)
+        assertTrue(emptyRes.combinacionesSugeridas.isEmpty())
+        assertTrue(emptyRes.mensajeSinDatos.isNotBlank())
+
+        val draws = (1..36).map { d ->
+            val date = LocalDate.of(2026, 9, 1).plusDays(d.toLong())
+            val safeDate = if (date.dayOfWeek.value == 7) date.plusDays(1) else date
+            val base = (d * 3) % 80
+            val nums2 = (0 until 20).map { k -> ((base + k) % 100).toString().padStart(2, '0') }
+            PlusSorteo(
+                fechaIso = safeDate.toString(),
+                numerosPlus = nums2,
+                origen = "Test"
+            )
+        }
+        val r1 = QuinielaPlusAnalyticsEngine.analyze(draws, VentanaPlus.TOTAL, PlusPesosMotor(), topCombinaciones = 4)
+        val r2 = QuinielaPlusAnalyticsEngine.analyze(draws, VentanaPlus.TOTAL, PlusPesosMotor(), topCombinaciones = 4)
+
+        assertTrue(r1.tieneDatos)
+        assertEquals(36, r1.totalSorteosAnalizados)
+        assertEquals(100, r1.rankingCandidatos.size)
+        assertEquals(4, r1.combinacionesSugeridas.size)
+        assertEquals(8, r1.combinacionesSugeridas.first().numeros.size)
+        assertTrue(r1.patrones.paresFrecuentes.isNotEmpty())
+        assertTrue(r1.patrones.terminaciones.size == 10)
+        assertTrue(r1.patrones.distribucionDecenas.size == 10)
+        assertTrue(r1.tendenciasDiaSemana.isNotEmpty())
+        assertTrue(r1.estacionalidadMensual.isNotEmpty())
+        // Determinismo absoluto: dos ejecuciones producen exactamente el mismo ranking y combinaciones
+        assertEquals(r1.combinacionesSugeridas, r2.combinacionesSugeridas)
+        assertEquals(r1.rankingCandidatos.take(10).map { it.numero }, r2.rankingCandidatos.take(10).map { it.numero })
     }
 }
 

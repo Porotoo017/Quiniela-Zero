@@ -16,6 +16,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.quinielazero.app.core.model.BoletaJugada
@@ -26,6 +28,7 @@ import com.quinielazero.app.core.model.Jurisdiccion
 import com.quinielazero.app.core.model.SorteoDomain
 import com.quinielazero.app.core.model.ThemeMode
 import com.quinielazero.app.core.model.TurnoSorteo
+import com.quinielazero.app.core.plus.PlusSorteo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -122,17 +125,35 @@ interface FuenteSaludDao {
 }
 
 @Database(
-    entities = [SorteoEntity::class, FuenteSaludEntity::class],
-    version = 1,
+    entities = [SorteoEntity::class, FuenteSaludEntity::class, PlusSorteoEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class QuinielaDatabase : RoomDatabase() {
     abstract fun sorteoDao(): SorteoDao
     abstract fun fuenteSaludDao(): FuenteSaludDao
+    abstract fun plusSorteoDao(): PlusSorteoDao
 
     companion object {
         @Volatile
         private var INSTANCE: QuinielaDatabase? = null
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `plus_sorteos` (
+                        `fechaIso` TEXT NOT NULL PRIMARY KEY,
+                        `numerosPlusCsv` TEXT NOT NULL,
+                        `numeros4Csv` TEXT NOT NULL,
+                        `origen` TEXT NOT NULL,
+                        `notas` TEXT NOT NULL,
+                        `createdAtMs` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
 
         fun getInstance(context: Context): QuinielaDatabase =
             INSTANCE ?: synchronized(this) {
@@ -140,7 +161,7 @@ abstract class QuinielaDatabase : RoomDatabase() {
                     context.applicationContext,
                     QuinielaDatabase::class.java,
                     "quiniela_zero_pro.db"
-                ).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2).build().also { INSTANCE = it }
             }
     }
 }
@@ -310,6 +331,21 @@ class ExportManager(private val context: Context) {
             w.write("fecha,loteria,turno,estado," + (1..20).joinToString(",") { "n$it" } + "\n")
             draws.forEach { d ->
                 w.write("${d.fechaIso},${d.loteria.dbValue},${d.turno.dbValue},${d.estado.dbValue},${d.numeros.joinToString(",")}\n")
+            }
+        }
+        file
+    }
+
+    suspend fun exportPlusCsvAndShare(draws: List<PlusSorteo>): File = withContext(Dispatchers.IO) {
+        val dir = File(context.cacheDir, "exports").apply { mkdirs() }
+        val file = File(dir, "quiniela_plus_historial.csv")
+        file.bufferedWriter(Charsets.UTF_8).use { w ->
+            w.write("fecha,origen,notas," + (1..20).joinToString(",") { "n$it" } + "\n")
+            draws.forEach { d ->
+                val padded = (d.numerosPlus + List(20) { "" }).take(20)
+                val safeOrigen = d.origen.replace(",", " ")
+                val safeNotas = d.notas.replace(",", " ")
+                w.write("${d.fechaIso},$safeOrigen,$safeNotas,${padded.joinToString(",")}\n")
             }
         }
         file
