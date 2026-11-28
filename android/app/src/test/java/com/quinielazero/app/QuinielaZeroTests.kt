@@ -248,8 +248,7 @@ class QuinielaZeroTests {
         assertEquals("2026-11-24", QuinielaPlusCsvParser.normalizeDateIso("24/11/2026"))
         assertEquals("2026-11-24", QuinielaPlusCsvParser.normalizeDateIso("24-11-2026"))
 
-        val ambiguousCsv = "colA;colB
-24/11/2026;01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20"
+        val ambiguousCsv = "colA;colB\n24/11/2026;01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20"
         val flex = QuinielaPlusCsvParser.parseFlexibleImport(ambiguousCsv, "custom.txt")
         assertTrue(flex is PlusCsvImportResult.NeedsMapping)
         val mapping = (flex as PlusCsvImportResult.NeedsMapping).suggestion
