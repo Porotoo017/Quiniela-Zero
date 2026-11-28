@@ -1525,7 +1525,7 @@ private fun CandidateExplanationRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text("#$rank", style = NumericCellStyle, color = GoldBright)
-        TempNumberBadge(number = stat.numero, isHot = stat.puntaje0a100 >= 75)
+        TempNumberBadge(number = stat.numero, subLabel = "${stat.puntaje0a100} pts", isHot = stat.puntaje0a100 >= 75)
         Column(modifier = Modifier.weight(1f)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Score ${stat.puntaje0a100}/100", style = MaterialTheme.typography.labelMedium, color = EmeraldNeon, fontWeight = FontWeight.Bold)

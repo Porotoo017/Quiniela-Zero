@@ -287,10 +287,12 @@ object QuinielaPlusCsvParser {
                 numberCols.isNotEmpty() -> numberCols.mapNotNull { cells.getOrNull(it) }
                 else -> cells.filterIndexed { i, _ -> i != dateCol }
             }
-            val (nums2, nums4) = normalizeDrawNumbers(rawTokens) ?: run {
+            val normalized = normalizeDrawNumbers(rawTokens)
+            if (normalized == null) {
                 skipped++
                 continue
             }
+            val (nums2, nums4) = normalized
             out[fechaIso] = PlusSorteo(
                 fechaIso = fechaIso,
                 numerosPlus = nums2,
